@@ -335,35 +335,43 @@ Are you sure you want to save these changes?`;
 
   return (
     <div className="h-full">
-      <div className="bg-white dark:bg-gray-800 shadow rounded-lg border border-gray-200 dark:border-gray-700 h-full flex flex-col">
+      <div className="h-full flex flex-col">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-          <h2 className="text-lg font-medium text-gray-900 dark:text-white flex items-center">
-            <span className="mr-2">⚙️</span>
-            Settings / Configuration
-          </h2>
-          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-            Configure your GitHub repository and API keys for the decomposition workflow.
-          </p>
+        <div className="px-6 py-6 border-b border-gray-100 flex-shrink-0">
+          <div className="flex items-start space-x-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white text-xl shadow-lg">
+              ⚙️
+            </div>
+            <div className="flex-1">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                Configuration & Setup
+              </h2>
+              <p className="text-gray-600 leading-relaxed">
+                Connect your GitHub repository and API keys to get started with intelligent issue decomposition.
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Private Repository Guide */}
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border-b border-yellow-200 dark:border-yellow-800 px-6 py-4 flex-shrink-0">
-          <div className="flex">
-            <span className="text-yellow-600 mr-3">💡</span>
-            <div>
-              <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-100 px-6 py-4 flex-shrink-0">
+          <div className="flex items-start space-x-3">
+            <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <span className="text-amber-600">💡</span>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-sm font-semibold text-amber-800 mb-1">
                 Private Repository Access
               </h3>
-              <p className="mt-1 text-sm text-yellow-700 dark:text-yellow-300">
+              <p className="text-sm text-amber-700 leading-relaxed">
                 For private repositories, ensure your GitHub Personal Access Token has <strong>repo</strong> and <strong>read:org</strong> permissions.{' '}
                 <a 
                   href="https://github.com/settings/tokens/new?scopes=repo,read:org&description=ChopChop%20Issue%20Decomposer" 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="underline hover:no-underline"
+                  className="font-semibold underline hover:no-underline transition-all"
                 >
-                  Create token
+                  Create token →
                 </a>
               </p>
             </div>
@@ -374,32 +382,32 @@ Are you sure you want to save these changes?`;
         <div className="flex-1 overflow-auto">
           {/* Configuration Form */}
           <div className="px-6 py-6">
-            <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-1">
+            <div className="space-y-6">
               {/* GitHub Repository */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
                   GitHub Repository
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span className="text-gray-500 dark:text-gray-400 text-sm">github.com/</span>
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <span className="text-gray-400 text-sm font-medium">github.com/</span>
                   </div>
                   <input
                     type="text"
                     placeholder="owner/repository"
                     value={formData.githubRepo}
                     onChange={(e) => handleInputChange('githubRepo', e.target.value)}
-                    className="w-full pl-24 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                    className="w-full pl-28 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-base transition-all hover:border-gray-400"
                   />
                 </div>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                <p className="mt-2 text-xs text-gray-500">
                   Include the owner/organization name and repository name
                 </p>
               </div>
 
               {/* GitHub PAT */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
                   GitHub Personal Access Token
                 </label>
                 <div className="relative">
@@ -408,21 +416,21 @@ Are you sure you want to save these changes?`;
                     placeholder="Enter your GitHub PAT"
                     value={formData.githubPat}
                     onChange={(e) => handleInputChange('githubPat', e.target.value)}
-                    className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-base transition-all hover:border-gray-400"
                   />
                   <button
                     type="button"
                     onClick={() => setShowTokens(prev => ({ ...prev, githubPat: !prev.githubPat }))}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
                   >
-                    <span className="text-sm">{showTokens.githubPat ? '🙈' : '👁️'}</span>
+                    <span className="text-lg">{showTokens.githubPat ? '🙈' : '👁️'}</span>
                   </button>
                 </div>
               </div>
 
               {/* OpenAI API Key */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
                   OpenAI API Key
                 </label>
                 <div className="relative">
@@ -431,14 +439,14 @@ Are you sure you want to save these changes?`;
                     placeholder="Enter your OpenAI API key"
                     value={formData.openaiApiKey}
                     onChange={(e) => handleInputChange('openaiApiKey', e.target.value)}
-                    className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-base transition-all hover:border-gray-400"
                   />
                   <button
                     type="button"
                     onClick={() => setShowTokens(prev => ({ ...prev, openaiApiKey: !prev.openaiApiKey }))}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
                   >
-                    <span className="text-sm">{showTokens.openaiApiKey ? '🙈' : '👁️'}</span>
+                    <span className="text-lg">{showTokens.openaiApiKey ? '🙈' : '👁️'}</span>
                   </button>
                 </div>
               </div>
@@ -446,69 +454,99 @@ Are you sure you want to save these changes?`;
           </div>
 
           {/* GitHub Validation Section */}
-          <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-6">
-            <div className="mb-4">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center">
-                <span className="mr-2">🔍</span>
-                GitHub Connection Test
-              </h3>
-              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                Verify that your GitHub setup is working correctly
-              </p>
+          <div className="border-t border-gray-100 px-6 py-6">
+            <div className="mb-6">
+              <div className="flex items-start space-x-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center text-white text-xl shadow-lg">
+                  🔍
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                    GitHub Connection Test
+                  </h3>
+                  <p className="text-gray-600">
+                    Verify that your GitHub setup is working correctly
+                  </p>
+                </div>
+              </div>
             </div>
 
             {/* Validation Status Indicators */}
-            <div className="space-y-3 mb-6">
-              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
-                <div className="flex items-center">
-                  <span className="mr-2">🔐</span>
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Token Authentication</span>
+            <div className="space-y-4 mb-6">
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
+                    <span className="text-indigo-600">🔐</span>
+                  </div>
+                  <span className="text-sm font-semibold text-gray-700">Token Authentication</span>
                 </div>
                 <div className="flex items-center">
                   {validationStatus.tokenValid === true && (
-                    <span className="text-green-600 dark:text-green-400">✅ Valid</span>
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      ✅ Valid
+                    </span>
                   )}
                   {validationStatus.tokenValid === false && (
-                    <span className="text-red-600 dark:text-red-400">❌ Invalid</span>
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                      ❌ Invalid
+                    </span>
                   )}
                   {validationStatus.tokenValid === null && (
-                    <span className="text-gray-500 dark:text-gray-400">⏳ Not tested</span>
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                      ⏳ Not tested
+                    </span>
                   )}
                 </div>
               </div>
 
-              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
-                <div className="flex items-center">
-                  <span className="mr-2">👁️</span>
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Read Issues</span>
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <span className="text-blue-600">👁️</span>
+                  </div>
+                  <span className="text-sm font-semibold text-gray-700">Read Issues</span>
                 </div>
                 <div className="flex items-center">
                   {validationStatus.repoReadable === true && (
-                    <span className="text-green-600 dark:text-green-400">✅ Can read</span>
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      ✅ Can read
+                    </span>
                   )}
                   {validationStatus.repoReadable === false && (
-                    <span className="text-red-600 dark:text-red-400">❌ Cannot read</span>
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                      ❌ Cannot read
+                    </span>
                   )}
                   {validationStatus.repoReadable === null && (
-                    <span className="text-gray-500 dark:text-gray-400">⏳ Not tested</span>
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                      ⏳ Not tested
+                    </span>
                   )}
                 </div>
               </div>
 
-              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
-                <div className="flex items-center">
-                  <span className="mr-2">✏️</span>
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Create Issues</span>
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+                    <span className="text-orange-600">✏️</span>
+                  </div>
+                  <span className="text-sm font-semibold text-gray-700">Create Issues</span>
                 </div>
                 <div className="flex items-center">
                   {validationStatus.repoWritable === true && (
-                    <span className="text-green-600 dark:text-green-400">✅ Can create</span>
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      ✅ Can create
+                    </span>
                   )}
                   {validationStatus.repoWritable === false && (
-                    <span className="text-red-600 dark:text-red-400">❌ Cannot create</span>
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                      ❌ Cannot create
+                    </span>
                   )}
                   {validationStatus.repoWritable === null && (
-                    <span className="text-gray-500 dark:text-gray-400">⏳ Not tested</span>
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                      ⏳ Not tested
+                    </span>
                   )}
                 </div>
               </div>
@@ -519,7 +557,7 @@ Are you sure you want to save these changes?`;
               <button
                 onClick={validateGitHubToken}
                 disabled={validationStatus.isValidating || !formData.githubPat}
-                className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center justify-center px-4 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
               >
                 {validationStatus.isValidating ? '⏳' : '🔐'} Test Token
               </button>
@@ -527,7 +565,7 @@ Are you sure you want to save these changes?`;
               <button
                 onClick={validateRepoRead}
                 disabled={validationStatus.isValidating || !formData.githubPat || !formData.githubRepo}
-                className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center justify-center px-4 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
               >
                 {validationStatus.isValidating ? '⏳' : '👁️'} Test Read
               </button>
@@ -535,7 +573,7 @@ Are you sure you want to save these changes?`;
               <button
                 onClick={validateRepoWrite}
                 disabled={validationStatus.isValidating || !formData.githubPat || !formData.githubRepo}
-                className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center justify-center px-4 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
               >
                 {validationStatus.isValidating ? '⏳' : '✏️'} Test Write
               </button>
@@ -543,53 +581,55 @@ Are you sure you want to save these changes?`;
               <button
                 onClick={validateAllGitHub}
                 disabled={validationStatus.isValidating || !formData.githubPat || !formData.githubRepo}
-                className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center justify-center px-4 py-3 text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-purple-600 border border-transparent rounded-xl hover:from-indigo-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg"
               >
                 {validationStatus.isValidating ? '⏳ Testing...' : '🔍 Test All'}
               </button>
             </div>
 
             {/* Helper Text */}
-            <div className="mt-4 text-xs text-gray-500 dark:text-gray-400">
-              <p>• Token test verifies your GitHub Personal Access Token is valid</p>
-              <p>• Read test checks if you can access the repository and read issues</p>
-              <p>• Write test creates a temporary test issue (then closes it) to verify create permissions</p>
+            <div className="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
+              <div className="text-xs text-blue-700 space-y-1">
+                <p>• <strong>Token test</strong> verifies your GitHub Personal Access Token is valid</p>
+                <p>• <strong>Read test</strong> checks if you can access the repository and read issues</p>
+                <p>• <strong>Write test</strong> creates a temporary test issue (then closes it) to verify create permissions</p>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Actions Footer */}
-        <div className="bg-gray-50 dark:bg-gray-750 border-t border-gray-200 dark:border-gray-700 px-6 py-4 flex-shrink-0">
+        <div className="bg-gray-50 border-t border-gray-100 px-6 py-6 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex space-x-3">
               <button
                 onClick={handleExport}
-                className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all shadow-sm"
               >
                 Download Config
               </button>
               <button
                 onClick={handleImport}
-                className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all shadow-sm"
               >
                 Upload Config
               </button>
             </div>
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-4">
               {hasExistingConfig() && hasConfigChanged() && (
-                <span className="text-sm text-orange-600 dark:text-orange-400">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
                   ⚠️ Unsaved changes
                 </span>
               )}
               <button
                 onClick={handleSave}
-                className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                className={`inline-flex items-center px-6 py-3 text-sm font-semibold rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all shadow-lg ${
                   hasExistingConfig() && hasConfigChanged()
-                    ? 'text-white bg-orange-600 border border-transparent hover:bg-orange-700'
-                    : 'text-white bg-blue-600 border border-transparent hover:bg-blue-700'
+                    ? 'text-white bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 focus:ring-orange-500'
+                    : 'text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 focus:ring-indigo-500'
                 }`}
               >
-                {hasExistingConfig() && hasConfigChanged() ? 'Update Configuration' : 'Save'}
+                {hasExistingConfig() && hasConfigChanged() ? 'Update Configuration' : 'Save & Continue'}
               </button>
             </div>
           </div>

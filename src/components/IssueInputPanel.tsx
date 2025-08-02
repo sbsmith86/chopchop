@@ -78,17 +78,19 @@ export default function IssueInputPanel() {
 
   return (
     <div className="h-full">
-      <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl border border-gray-200 dark:border-gray-700 h-full flex flex-col">
+      <div className="h-full flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-          <div className="flex items-center space-x-3">
-            <span className="text-2xl">📝</span>
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                Start New Decomposition
+        <div className="px-6 py-6 border-b border-gray-100 flex-shrink-0">
+          <div className="flex items-start space-x-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center text-white text-xl shadow-lg">
+              📝
+            </div>
+            <div className="flex-1">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                Issue Input & Parsing
               </h2>
-              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                Paste a GitHub issue URL or enter markdown content to begin the decomposition process.
+              <p className="text-gray-600 leading-relaxed">
+                Start your decomposition journey by providing a GitHub issue URL or entering markdown content directly.
               </p>
             </div>
           </div>
@@ -98,71 +100,108 @@ export default function IssueInputPanel() {
         <div className="flex-1 overflow-auto p-6">
           {/* Input Type Selection */}
           <div className="mb-8">
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
-              Input Method
+            <label className="block text-sm font-semibold text-gray-700 mb-4">
+              Choose Input Method
             </label>
-            <div className="flex space-x-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <button
                 onClick={() => setInputType('url')}
-                className={`flex items-center space-x-2 px-6 py-3 text-sm font-medium rounded-lg border-2 transition-all ${
+                className={`p-6 text-left rounded-xl border-2 transition-all duration-200 ${
                   inputType === 'url'
-                    ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-600'
-                    : 'text-gray-600 border-gray-200 hover:text-gray-800 hover:border-gray-300 dark:text-gray-400 dark:border-gray-600 dark:hover:text-gray-200'
+                    ? 'bg-gradient-to-br from-green-50 to-emerald-50 text-green-700 border-green-300 shadow-lg'
+                    : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:shadow-md'
                 }`}
               >
-                <span className="text-lg">🔗</span>
-                <span>GitHub URL</span>
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                    inputType === 'url' ? 'bg-green-100' : 'bg-gray-100'
+                  }`}>
+                    <span className="text-lg">🔗</span>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">GitHub URL</h3>
+                    <p className="text-sm opacity-75">Import from existing issue</p>
+                  </div>
+                </div>
+                <p className="text-sm opacity-80">
+                  Automatically fetch issue content from a GitHub repository
+                </p>
               </button>
+              
               <button
                 onClick={() => setInputType('markdown')}
-                className={`flex items-center space-x-2 px-6 py-3 text-sm font-medium rounded-lg border-2 transition-all ${
+                className={`p-6 text-left rounded-xl border-2 transition-all duration-200 ${
                   inputType === 'markdown'
-                    ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-600'
-                    : 'text-gray-600 border-gray-200 hover:text-gray-800 hover:border-gray-300 dark:text-gray-400 dark:border-gray-600 dark:hover:text-gray-200'
+                    ? 'bg-gradient-to-br from-green-50 to-emerald-50 text-green-700 border-green-300 shadow-lg'
+                    : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:shadow-md'
                 }`}
               >
-                <span className="text-lg">📄</span>
-                <span>Markdown Content</span>
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                    inputType === 'markdown' ? 'bg-green-100' : 'bg-gray-100'
+                  }`}>
+                    <span className="text-lg">📄</span>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">Markdown Content</h3>
+                    <p className="text-sm opacity-75">Write or paste directly</p>
+                  </div>
+                </div>
+                <p className="text-sm opacity-80">
+                  Create new content using markdown formatting
+                </p>
               </button>
             </div>
           </div>
 
           {/* Input Area */}
           <div className="mb-6">
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+            <label className="block text-sm font-semibold text-gray-700 mb-3">
               {inputType === 'url' 
-                ? 'Paste GitHub Issue URL:' 
-                : 'Enter Issue Content (Markdown):'}
+                ? 'GitHub Issue URL' 
+                : 'Issue Content (Markdown)'}
             </label>
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder={
-                inputType === 'url'
-                  ? 'https://github.com/owner/repo/issues/123'
-                  : '# Issue Title\n\nIssue description goes here...\n\n## Problem\nDescribe the problem you\'re facing.\n\n## Expected Behavior\nWhat should happen?\n\n## Additional Context\nAny other relevant information.'
-              }
-              rows={inputType === 'url' ? 4 : 12}
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-base leading-relaxed transition-colors resize-none"
-              disabled={state.isLoading}
-            />
-            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-              {inputType === 'url' 
-                ? 'Supports both public and private GitHub repositories (requires proper PAT permissions)'
-                : 'Use markdown formatting for better structure. Include sections like Problem, Expected Behavior, and Additional Context.'}
+            <div className="relative">
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder={
+                  inputType === 'url'
+                    ? 'https://github.com/owner/repo/issues/123'
+                    : '# Issue Title\n\nDescribe the problem you\'re facing...\n\n## Expected Behavior\nWhat should happen?\n\n## Additional Context\nAny other relevant information.'
+                }
+                rows={inputType === 'url' ? 4 : 12}
+                className="w-full px-4 py-4 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-base leading-relaxed transition-all resize-none hover:border-gray-400"
+                disabled={state.isLoading}
+              />
+              {inputType === 'url' && (
+                <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                  <span className="text-gray-400">🔗</span>
+                </div>
+              )}
+            </div>
+            <p className="mt-3 text-sm text-gray-500 flex items-start space-x-2">
+              <span className="text-blue-500 mt-0.5">💡</span>
+              <span>
+                {inputType === 'url' 
+                  ? 'Supports both public and private GitHub repositories. Ensure your PAT has proper permissions for private repos.'
+                  : 'Use markdown formatting for better structure. Include sections like Problem, Expected Behavior, and Additional Context for best results.'}
+              </span>
             </p>
           </div>
 
           {/* Configuration Warning */}
           {!state.config && (
-            <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 rounded-lg">
+            <div className="mb-6 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 border-l-4 border-yellow-400 rounded-xl">
               <div className="flex items-start space-x-3">
-                <span className="text-yellow-500 text-lg flex-shrink-0">⚠️</span>
+                <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <span className="text-yellow-600">⚠️</span>
+                </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-yellow-800 dark:text-yellow-200">
+                  <h3 className="text-sm font-semibold text-yellow-800 mb-1">
                     Configuration Required
                   </h3>
-                  <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                  <p className="text-sm text-yellow-700">
                     Please configure your API keys in the Configuration step before loading GitHub issues.
                   </p>
                 </div>
@@ -172,14 +211,16 @@ export default function IssueInputPanel() {
 
           {/* Current Issue Display */}
           {state.issue && (
-            <div className="mb-6 p-6 bg-green-50 dark:bg-green-900/20 border-l-4 border-green-400 rounded-lg">
+            <div className="mb-6 p-6 bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-400 rounded-xl shadow-sm">
               <div className="flex items-start space-x-3">
-                <span className="text-green-500 text-lg flex-shrink-0">✅</span>
+                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <span className="text-green-600">✅</span>
+                </div>
                 <div className="flex-1">
-                  <h3 className="text-sm font-semibold text-green-800 dark:text-green-200 mb-2">
-                    Current Issue Loaded:
+                  <h3 className="text-sm font-semibold text-green-800 mb-2">
+                    Issue Successfully Loaded
                   </h3>
-                  <p className="text-base font-medium text-green-900 dark:text-green-100 mb-2">
+                  <p className="text-base font-medium text-green-900 mb-3 leading-relaxed">
                     {state.issue.title}
                   </p>
                   {state.issue.url && (
@@ -187,7 +228,7 @@ export default function IssueInputPanel() {
                       href={state.issue.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center text-sm text-green-700 dark:text-green-300 hover:text-green-900 dark:hover:text-green-100 font-medium hover:underline"
+                      className="inline-flex items-center px-3 py-1 text-sm font-medium text-green-700 bg-green-100 rounded-lg hover:bg-green-200 transition-colors"
                     >
                       <span className="mr-1">🔗</span>
                       View on GitHub →
@@ -200,22 +241,27 @@ export default function IssueInputPanel() {
         </div>
 
         {/* Action Button Footer */}
-        <div className="border-t border-gray-200 dark:border-gray-700 p-6 flex-shrink-0">
-          <div className="flex justify-end">
+        <div className="border-t border-gray-100 p-6 bg-gray-50 flex-shrink-0">
+          <div className="flex justify-between items-center">
+            <div className="text-sm text-gray-500">
+              {inputType === 'url' 
+                ? 'Ready to import from GitHub' 
+                : 'Ready to process markdown content'}
+            </div>
             <button
               onClick={handleLoadIssue}
               disabled={!input.trim() || state.isLoading || (inputType === 'url' && !state.config)}
-              className="inline-flex items-center px-6 py-3 text-base font-semibold text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-colors"
+              className="inline-flex items-center px-6 py-3 text-base font-semibold text-white bg-gradient-to-r from-green-500 to-emerald-600 border border-transparent rounded-xl hover:from-green-600 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transition-all"
             >
               {state.isLoading ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                  Loading...
+                  Processing...
                 </>
               ) : (
                 <>
                   <span className="mr-2">🚀</span>
-                  Load Issue
+                  {inputType === 'url' ? 'Import Issue' : 'Process Content'}
                 </>
               )}
             </button>
