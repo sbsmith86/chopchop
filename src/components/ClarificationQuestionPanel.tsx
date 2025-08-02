@@ -15,7 +15,15 @@ export const ClarificationQuestionPanel: React.FC = () => {
    * Generates clarification questions using OpenAI API
    */
   const generateQuestions = async (): Promise<void> => {
-    if (!state.issue || !state.config.openaiApiKey) return;
+    if (!state.issue) {
+      setError('No issue data available for generating questions');
+      return;
+    }
+
+    if (!state.config.openaiApiKey) {
+      setError('OpenAI API key is required. Please configure it in settings.');
+      return;
+    }
 
     setIsGenerating(true);
     setError(null);
@@ -29,17 +37,25 @@ export const ClarificationQuestionPanel: React.FC = () => {
         }
       );
 
+      // Convert to ClarificationQuestion format
       const clarificationQuestions: ClarificationQuestion[] = questions.map((question, index) => ({
-        id: `q-${index}`,
+        id: `q-${Date.now()}-${index}`,
         question,
         answer: '',
         required: true
       }));
 
       dispatch({ type: 'SET_CLARIFICATION_QUESTIONS', payload: clarificationQuestions });
+
+      // Show success feedback if using fallback questions
+      if (questions.some(q => q.includes('specific technical requirements'))) {
+        setError('Using fallback questions due to OpenAI API issue. Questions may be less specific.');
+      }
+
     } catch (error) {
       console.error('Failed to generate questions:', error);
-      setError(error instanceof Error ? error.message : 'Failed to generate clarification questions');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to generate clarification questions';
+      setError(`${errorMessage}. Please check your OpenAI API key and try again.`);
     } finally {
       setIsGenerating(false);
     }
@@ -87,7 +103,8 @@ export const ClarificationQuestionPanel: React.FC = () => {
       <div className="p-8">
         <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
           <div className="w-12 h-12 border-4 border-blue-200 rounded-full animate-spin border-t-blue-600"></div>
-          <p className="text-gray-600 font-medium">Generating clarification questions...</p>
+          <p className="text-gray-600 font-medium">Analyzing issue and generating clarification questions...</p>
+          <p className="text-sm text-gray-500">This may take a few seconds</p>
         </div>
       </div>
     );
@@ -100,8 +117,19 @@ export const ClarificationQuestionPanel: React.FC = () => {
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900">Clarification Questions</h2>
           <p className="text-gray-600 mt-2">
-            Please answer these questions to help create a better execution plan.
+            AI-generated questions based on your issue to help create a better execution plan.
           </p>
+          {state.issue && (
+            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <h3 className="font-medium text-blue-900 mb-2">Analyzing Issue:</h3>
+              <p className="text-blue-800 font-medium">{state.issue.title}</p>
+              {state.issue.body && (
+                <p className="text-blue-700 text-sm mt-1 line-clamp-3">
+                  {state.issue.body.substring(0, 200)}...
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Questions */}
@@ -133,24 +161,51 @@ export const ClarificationQuestionPanel: React.FC = () => {
           ))}
         </div>
 
-        {/* Actions */}
-        <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-200">
-          <button
-            onClick={generateQuestions}
-            disabled={isGenerating}
-            className="px-4 py-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-all border border-blue-200 hover:border-blue-300"
-          >
-            Regenerate Questions
-          </button>
+        {/* No questions generated */}
+        {state.clarificationQuestions.length === 0 && !isGenerating && (
+          <div className="text-center py-16">
+            <div className="flex flex-col items-center space-y-6">
+              <div className="w-20 h-20 bg-gradient-to-br from-amber-100 to-orange-100 rounded-2xl flex items-center justify-center">
+                <span className="text-3xl">❓</span>
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  No Questions Generated
+                </h3>
+                <p className="text-gray-600 text-base mb-6 max-w-md mx-auto">
+                  We couldn't generate clarification questions for this issue. You can proceed to plan generation or try regenerating questions.
+                </p>
+              </div>
+              <button
+                onClick={generateQuestions}
+                className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-lg hover:shadow-xl"
+              >
+                Generate Questions
+              </button>
+            </div>
+          </div>
+        )}
 
-          <button
-            onClick={handleNext}
-            disabled={!canProceed()}
-            className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Continue to Plan Review
-          </button>
-        </div>
+        {/* Actions */}
+        {state.clarificationQuestions.length > 0 && (
+          <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-200">
+            <button
+              onClick={generateQuestions}
+              disabled={isGenerating}
+              className="px-4 py-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-all border border-blue-200 hover:border-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isGenerating ? 'Generating...' : 'Regenerate Questions'}
+            </button>
+
+            <button
+              onClick={handleNext}
+              disabled={!canProceed()}
+              className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Continue to Plan Review
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

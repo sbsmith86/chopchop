@@ -67,6 +67,36 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ onClose }) => {
     setLocalConfig(prev => ({ ...prev, preferences }));
   };
 
+  /**
+   * Tests OpenAI API key validity
+   */
+  const testOpenAIConnection = async (): Promise<void> => {
+    if (!localConfig.openaiApiKey) {
+      alert('Please enter an OpenAI API key first');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const response = await fetch('https://api.openai.com/v1/models', {
+        headers: {
+          'Authorization': `Bearer ${localConfig.openaiApiKey}`,
+        },
+      });
+
+      if (response.ok) {
+        alert('✅ OpenAI API key is valid and working!');
+      } else {
+        const error = await response.json().catch(() => ({}));
+        alert(`❌ OpenAI API key test failed: ${error.error?.message || response.statusText}`);
+      }
+    } catch (error) {
+      alert(`❌ OpenAI API connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="relative p-8">
       {/* Header */}
@@ -150,13 +180,22 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ onClose }) => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               API Key
             </label>
-            <input
-              type={showTokens ? 'text' : 'password'}
-              value={localConfig.openaiApiKey || ''}
-              onChange={e => updateField('openaiApiKey', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all font-mono text-sm"
-              placeholder="sk-xxxxxxxxxxxxxxxxxxxx"
-            />
+            <div className="flex items-center space-x-2">
+              <input
+                type={showTokens ? 'text' : 'password'}
+                value={localConfig.openaiApiKey || ''}
+                onChange={e => updateField('openaiApiKey', e.target.value)}
+                className="flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all font-mono text-sm"
+                placeholder="sk-xxxxxxxxxxxxxxxxxxxx"
+              />
+              <button
+                onClick={testOpenAIConnection}
+                disabled={!localConfig.openaiApiKey || isSaving}
+                className="px-3 py-2 text-sm bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Test Connection
+              </button>
+            </div>
           </div>
         </div>
 
