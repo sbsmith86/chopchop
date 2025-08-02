@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
-import { AppState, WorkflowStep, Config, GitHubIssue, ClarificationQuestion, ExecutionPlan, Subtask } from '../types';
+import { AppState, Config, GitHubIssue, ClarificationQuestion, ExecutionPlan, Subtask } from '../types';
 
 /**
  * Action types for the app reducer
@@ -117,6 +117,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 /**
  * Hook to use the app context
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAppContext() {
   const context = useContext(AppContext);
   if (context === undefined) {

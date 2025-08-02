@@ -1,6 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { ClarificationQuestion } from '../types';
 import { OpenAIClient } from '../utils/openai';
 
 /**
@@ -10,17 +9,10 @@ export default function ClarificationQuestionPanel() {
   const { state, dispatch, setStep, setError, setLoading } = useAppContext();
   const [hasGenerated, setHasGenerated] = useState(false);
 
-  // Auto-generate questions when entering this step
-  useEffect(() => {
-    if (state.issue && state.config && !hasGenerated && state.clarificationQuestions.length === 0) {
-      generateQuestions();
-    }
-  }, [state.issue, state.config, hasGenerated, state.clarificationQuestions.length]);
-
   /**
    * Generate clarification questions using OpenAI
    */
-  const generateQuestions = async () => {
+  const generateQuestions = useCallback(async () => {
     if (!state.issue || !state.config) {
       setError('Issue and configuration are required');
       return;
@@ -40,7 +32,14 @@ export default function ClarificationQuestionPanel() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [state.issue, state.config, dispatch, setError, setLoading]);
+
+  // Auto-generate questions when entering this step
+  useEffect(() => {
+    if (state.issue && state.config && !hasGenerated && state.clarificationQuestions.length === 0) {
+      generateQuestions();
+    }
+  }, [state.issue, state.config, hasGenerated, state.clarificationQuestions.length, generateQuestions]);
 
   /**
    * Handle answer change for a question

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import MDEditor from '@uiw/react-md-editor';
 import { useAppContext } from '../context/AppContext';
 import { ExecutionPlan } from '../types';
@@ -12,19 +12,10 @@ export default function PlanReviewEditor() {
   const [planContent, setPlanContent] = useState('');
   const [hasGenerated, setHasGenerated] = useState(false);
 
-  // Auto-generate plan when entering this step
-  useEffect(() => {
-    if (state.issue && state.config && !hasGenerated && !state.executionPlan) {
-      generatePlan();
-    } else if (state.executionPlan) {
-      setPlanContent(state.executionPlan.content);
-    }
-  }, [state.issue, state.config, hasGenerated, state.executionPlan]);
-
   /**
    * Generate execution plan using OpenAI
    */
-  const generatePlan = async () => {
+  const generatePlan = useCallback(async () => {
     if (!state.issue || !state.config) {
       setError('Issue and configuration are required');
       return;
@@ -36,16 +27,25 @@ export default function PlanReviewEditor() {
 
     try {
       const openaiClient = new OpenAIClient(state.config.openaiApiKey);
-      const plan = await openaiClient.generateExecutionPlan(state.issue, state.clarificationQuestions);
+      const executionPlan = await openaiClient.generateExecutionPlan(state.issue, state.clarificationQuestions);
       
-      dispatch({ type: 'SET_EXECUTION_PLAN', payload: plan });
-      setPlanContent(plan.content);
+      dispatch({ type: 'SET_EXECUTION_PLAN', payload: executionPlan });
+      setPlanContent(executionPlan.content);
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to generate execution plan');
     } finally {
       setLoading(false);
     }
-  };
+  }, [state.issue, state.config, state.clarificationQuestions, dispatch, setError, setLoading]);
+
+  // Auto-generate plan when entering this step
+  useEffect(() => {
+    if (state.issue && state.config && !hasGenerated && !state.executionPlan) {
+      generatePlan();
+    } else if (state.executionPlan) {
+      setPlanContent(state.executionPlan.content);
+    }
+  }, [state.issue, state.config, hasGenerated, state.executionPlan, generatePlan]);
 
   /**
    * Save the edited plan and proceed

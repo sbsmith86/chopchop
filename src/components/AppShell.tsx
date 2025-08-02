@@ -1,4 +1,3 @@
-import React from 'react';
 import { useAppContext } from '../context/AppContext';
 import ConfigPanel from './ConfigPanel';
 import IssueInputPanel from './IssueInputPanel';

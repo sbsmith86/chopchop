@@ -1,4 +1,4 @@
-import { Config, GitHubIssue, ClarificationQuestion, ExecutionPlan, Subtask } from '../types';
+import { GitHubIssue, ClarificationQuestion, ExecutionPlan, Subtask } from '../types';
 
 /**
  * OpenAI API client for generating clarification questions and execution plans
@@ -62,8 +62,8 @@ Return only the questions, one per line, without numbering or extra formatting.`
       
       const questions = content
         .split('\n')
-        .filter(line => line.trim())
-        .map((question, index) => ({
+        .filter((line: string) => line.trim())
+        .map((question: string, index: number) => ({
           id: `q-${Date.now()}-${index}`,
           question: question.trim(),
         }));
@@ -207,16 +207,19 @@ Format as JSON array with this structure:
       
       try {
         const subtaskData = JSON.parse(content);
-        return subtaskData.map((task: any, index: number) => ({
-          id: `task-${Date.now()}-${index}`,
-          title: task.title,
-          description: task.description,
-          acceptanceCriteria: task.acceptanceCriteria || [],
-          guardrails: task.guardrails || [],
-          isTooBig: this.detectTooBig(task.title, task.description),
-          order: index,
-        }));
-      } catch (parseError) {
+        return subtaskData.map((task: unknown, index: number) => {
+          const typedTask = task as { title: string; description: string; acceptanceCriteria?: string[]; guardrails?: string[] };
+          return {
+            id: `task-${Date.now()}-${index}`,
+            title: typedTask.title,
+            description: typedTask.description,
+            acceptanceCriteria: typedTask.acceptanceCriteria || [],
+            guardrails: typedTask.guardrails || [],
+            isTooBig: this.detectTooBig(typedTask.title, typedTask.description),
+            order: index,
+          };
+        });
+      } catch {
         throw new Error('Failed to parse subtasks response');
       }
     } catch (error) {

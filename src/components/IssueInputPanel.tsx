@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { GitHubIssue } from '../types';
 import { GitHubClient } from '../utils/github';
@@ -15,7 +15,7 @@ export default function IssueInputPanel() {
    * Parse GitHub issue URL
    */
   const parseGitHubUrl = (url: string): { owner: string; repo: string; number: number } | null => {
-    const match = url.match(/github\.com\/([^\/]+)\/([^\/]+)\/issues\/(\d+)/);
+    const match = url.match(/github\.com\/([^/]+)\/([^/]+)\/issues\/(\d+)/);
     if (!match) return null;
     return {
       owner: match[1],

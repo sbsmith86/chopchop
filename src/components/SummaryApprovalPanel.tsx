@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { CreatedIssue } from '../types';
 import { GitHubClient } from '../utils/github';
@@ -20,7 +20,7 @@ export default function SummaryApprovalPanel() {
       return;
     }
 
-    const repoMatch = state.config.githubRepo.match(/^([^\/]+)\/(.+)$/);
+    const repoMatch = state.config.githubRepo.match(/^([^/]+)\/(.+)$/);
     if (!repoMatch) {
       setError('Invalid repository format. Expected: owner/repository');
       return;
