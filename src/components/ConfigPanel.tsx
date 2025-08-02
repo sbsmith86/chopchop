@@ -14,6 +14,7 @@ export default function ConfigPanel() {
     githubRepo: '',
     openaiApiKey: '',
   });
+  const [originalConfig, setOriginalConfig] = useState<Config | null>(null);
   const [showTokens, setShowTokens] = useState({
     githubPat: false,
     openaiApiKey: false,
@@ -30,9 +31,11 @@ export default function ConfigPanel() {
     const savedConfig = loadConfig();
     if (savedConfig) {
       setFormData(savedConfig);
+      setOriginalConfig(savedConfig);
       setConfig(savedConfig);
     }
-  }, [setConfig]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Intentionally omit setConfig to prevent infinite loop
 
   /**
    * Handle form input changes
@@ -52,6 +55,29 @@ export default function ConfigPanel() {
   };
 
   /**
+   * Check if current form data differs from original saved configuration
+   */
+  const hasConfigChanged = (): boolean => {
+    if (!originalConfig) return false;
+    return (
+      formData.githubPat !== originalConfig.githubPat ||
+      formData.githubRepo !== originalConfig.githubRepo ||
+      formData.openaiApiKey !== originalConfig.openaiApiKey
+    );
+  };
+
+  /**
+   * Check if there's an existing configuration that would be overwritten
+   */
+  const hasExistingConfig = (): boolean => {
+    return originalConfig !== null && (
+      originalConfig.githubPat !== '' ||
+      originalConfig.githubRepo !== '' ||
+      originalConfig.openaiApiKey !== ''
+    );
+  };
+
+  /**
    * Save configuration and proceed to next step
    */
   const handleSave = () => {
@@ -60,9 +86,25 @@ export default function ConfigPanel() {
       return;
     }
 
+    // Check if we're updating existing configuration and if values have changed
+    if (hasExistingConfig() && hasConfigChanged()) {
+      const confirmMessage = `You are about to update your existing configuration. This will overwrite:
+
+${originalConfig?.githubRepo !== formData.githubRepo ? `• GitHub Repository: "${originalConfig?.githubRepo}" → "${formData.githubRepo}"` : ''}
+${originalConfig?.githubPat !== formData.githubPat ? `• GitHub Personal Access Token` : ''}
+${originalConfig?.openaiApiKey !== formData.openaiApiKey ? `• OpenAI API Key` : ''}
+
+Are you sure you want to save these changes?`;
+
+      if (!window.confirm(confirmMessage)) {
+        return; // User cancelled, don't save
+      }
+    }
+
     try {
       saveConfig(formData);
       setConfig(formData);
+      setOriginalConfig(formData); // Update original config to current values
       setError(null);
       setStep(1); // Move to Issue Input step
     } catch {
@@ -530,12 +572,23 @@ export default function ConfigPanel() {
                 Upload Config
               </button>
             </div>
-            <button
-              onClick={handleSave}
-              className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              Save
-            </button>
+            <div className="flex items-center space-x-3">
+              {hasExistingConfig() && hasConfigChanged() && (
+                <span className="text-sm text-orange-600 dark:text-orange-400">
+                  ⚠️ Unsaved changes
+                </span>
+              )}
+              <button
+                onClick={handleSave}
+                className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                  hasExistingConfig() && hasConfigChanged()
+                    ? 'text-white bg-orange-600 border border-transparent hover:bg-orange-700'
+                    : 'text-white bg-blue-600 border border-transparent hover:bg-blue-700'
+                }`}
+              >
+                {hasExistingConfig() && hasConfigChanged() ? 'Update Configuration' : 'Save'}
+              </button>
+            </div>
           </div>
         </div>
       </div>
