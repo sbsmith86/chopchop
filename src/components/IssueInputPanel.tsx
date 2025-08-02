@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { GitHubIssue } from '../types';
+import { GitHubClient } from '../utils/github';
 
 /**
  * Issue input panel for GitHub URLs or markdown content
  */
 export default function IssueInputPanel() {
-  const { setIssue, setStep, setError } = useAppContext();
+  const { state, setIssue, setStep, setError, setLoading } = useAppContext();
   const [input, setInput] = useState('');
   const [inputType, setInputType] = useState<'url' | 'markdown'>('url');
 
@@ -32,23 +33,27 @@ export default function IssueInputPanel() {
       return;
     }
 
+    if (!state.config) {
+      setError('Please configure your API keys in the Configuration step first');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
     try {
       let issue: GitHubIssue;
 
       if (inputType === 'url') {
         const parsed = parseGitHubUrl(input);
         if (!parsed) {
-          setError('Invalid GitHub issue URL format');
+          setError('Invalid GitHub issue URL format. Expected: https://github.com/owner/repo/issues/123');
           return;
         }
         
-        // For now, create a placeholder issue
-        // TODO: Implement actual GitHub API fetching
-        issue = {
-          title: `Issue #${parsed.number}`,
-          body: 'This would be fetched from GitHub API',
-          url: input,
-        };
+        // Fetch issue from GitHub API
+        const githubClient = new GitHubClient(state.config.githubPat);
+        issue = await githubClient.fetchIssue(input);
       } else {
         // Parse markdown input
         const lines = input.split('\n');
@@ -65,7 +70,9 @@ export default function IssueInputPanel() {
       setError(null);
       setStep(2); // Move to Clarification step
     } catch (error) {
-      setError('Failed to load issue');
+      setError(error instanceof Error ? error.message : 'Failed to load issue');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -112,7 +119,7 @@ export default function IssueInputPanel() {
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {inputType === 'url' 
-                ? 'Paste GitHub Issue URL or Markdown:' 
+                ? 'Paste GitHub Issue URL:' 
                 : 'Enter Issue Content (Markdown):'}
             </label>
             <textarea
@@ -125,17 +132,56 @@ export default function IssueInputPanel() {
               }
               rows={inputType === 'url' ? 3 : 10}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+              disabled={state.isLoading}
             />
           </div>
+
+          {/* Configuration Warning */}
+          {!state.config && (
+            <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <span className="text-yellow-400">⚠️</span>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-yellow-700 dark:text-yellow-200">
+                    Please configure your API keys in the Configuration step before loading GitHub issues.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Current Issue Display */}
+          {state.issue && (
+            <div className="mb-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
+              <h3 className="text-sm font-medium text-green-800 dark:text-green-200 mb-2">
+                Current Issue:
+              </h3>
+              <p className="text-sm text-green-700 dark:text-green-300 font-medium">
+                {state.issue.title}
+              </p>
+              {state.issue.url && (
+                <a
+                  href={state.issue.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-green-600 dark:text-green-400 hover:underline"
+                >
+                  View on GitHub →
+                </a>
+              )}
+            </div>
+          )}
 
           {/* Action Button */}
           <div className="flex justify-end">
             <button
               onClick={handleLoadIssue}
-              disabled={!input.trim()}
+              disabled={!input.trim() || state.isLoading || (inputType === 'url' && !state.config)}
               className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Load Issue
+              {state.isLoading ? 'Loading...' : 'Load Issue'}
             </button>
           </div>
         </div>
