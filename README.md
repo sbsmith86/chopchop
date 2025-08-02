@@ -1,5 +1,112 @@
 # ChopChop
 
+Universal Issue Decomposer SPA - A browser-only React application that decomposes GitHub issues into actionable subtasks using AI assistance.
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- **Node.js** (v18 or higher) - [Download here](https://nodejs.org/)
+- **npm** (comes with Node.js) or **yarn**
+- **Git** - [Download here](https://git-scm.com/)
+
+### Local Development Setup
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/sbsmith86/chopchop.git
+   cd chopchop
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+3. **Start the development server:**
+   ```bash
+   npm run dev
+   ```
+
+4. **Open your browser:**
+   - Navigate to `http://localhost:5173` (or the URL shown in terminal)
+   - The application will hot-reload when you make changes
+
+### Configuration
+
+Before using ChopChop, you'll need to configure:
+
+1. **GitHub Personal Access Token (PAT):**
+   - Go to GitHub Settings → Developer Settings → Personal Access Tokens → Tokens (classic)
+   - Generate a new token with `repo` permissions
+   - Copy the token for use in the app
+
+2. **OpenAI API Key:**
+   - Sign up at [OpenAI](https://platform.openai.com/)
+   - Generate an API key from your dashboard
+   - Copy the key for use in the app
+
+3. **Configure in the app:**
+   - Open ChopChop in your browser
+   - Go to the "Configuration" panel (step 1)
+   - Enter your GitHub repository (format: `owner/repository`)
+   - Enter your GitHub PAT and OpenAI API key
+   - Click "Save" to store the configuration locally
+
+### Available Scripts
+
+- `npm run dev` - Start development server with hot reload
+- `npm run build` - Build production bundle
+- `npm run preview` - Preview production build locally
+- `npm run lint` - Run ESLint to check code quality
+
+### Project Structure
+
+```
+chopchop/
+├── src/
+│   ├── components/     # React components for each workflow step
+│   ├── context/        # React Context for state management
+│   ├── types/          # TypeScript type definitions
+│   ├── utils/          # API clients and utility functions
+│   └── App.tsx         # Main application component
+├── public/             # Static assets
+├── package.json        # Dependencies and scripts
+└── vite.config.js      # Vite build configuration
+```
+
+### Features
+
+- 🔪 **6-Step Workflow:** Configuration → Issue Input → Clarification → Plan Review → Subtasks → Approval
+- 🤖 **AI Integration:** OpenAI GPT-3.5-turbo for intelligent decomposition
+- 🔗 **GitHub Integration:** Direct issue fetching and creation
+- 🎨 **Modern UI:** Responsive design with Tailwind CSS
+- 🔒 **Security:** Browser-only operation with local storage
+
+### Troubleshooting
+
+**Port already in use:**
+```bash
+# Kill process using port 5173
+lsof -ti:5173 | xargs kill -9
+# Or use a different port
+npm run dev -- --port 3000
+```
+
+**Build issues:**
+```bash
+# Clear node modules and reinstall
+rm -rf node_modules package-lock.json
+npm install
+```
+
+**API Key issues:**
+- Ensure your GitHub PAT has `repo` permissions
+- Verify your OpenAI API key is valid and has credits
+- Check browser console for specific error messages
+
+---
+
 # Technical Design Document
 
 **Project:** Universal Issue Decomposer SPA
