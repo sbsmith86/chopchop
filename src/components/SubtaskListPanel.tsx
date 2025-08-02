@@ -56,95 +56,106 @@ function SubtaskCard({ subtask, onUpdate }: { subtask: Subtask; onUpdate: (subta
     <div
       ref={setNodeRef}
       style={style}
-      className={`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg p-4 ${
-        subtask.isTooBig ? 'border-l-4 border-l-yellow-500' : ''
+      className={`bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-600 rounded-lg p-6 shadow-sm hover:shadow-md transition-all ${
+        subtask.isTooBig ? 'border-l-4 border-l-yellow-500 bg-yellow-50/50 dark:bg-yellow-900/10' : ''
       }`}
     >
       <div className="flex items-start justify-between">
         <div className="flex-1">
           {isEditing ? (
-            <div className="space-y-3">
+            <div className="space-y-4">
               <input
                 type="text"
                 value={editedSubtask.title}
                 onChange={(e) => setEditedSubtask({ ...editedSubtask, title: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-base font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white transition-colors"
+                placeholder="Task title..."
               />
               <textarea
                 value={editedSubtask.description}
                 onChange={(e) => setEditedSubtask({ ...editedSubtask, description: e.target.value })}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                rows={4}
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white transition-colors resize-none"
+                placeholder="Task description..."
               />
-              <div className="flex space-x-2">
+              <div className="flex space-x-3">
                 <button
                   onClick={handleSave}
-                  className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors"
                 >
+                  <span className="mr-1">✓</span>
                   Save
                 </button>
                 <button
                   onClick={handleCancel}
-                  className="px-3 py-1 text-xs bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
                 >
+                  <span className="mr-1">✕</span>
                   Cancel
                 </button>
               </div>
             </div>
           ) : (
             <>
-              <div className="flex items-center">
+              <div className="flex items-start space-x-3">
                 <button
                   {...attributes}
                   {...listeners}
-                  className="mr-2 text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing"
+                  className="mt-1 text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing transition-colors"
+                  title="Drag to reorder"
                 >
-                  ⋮⋮
+                  <span className="text-lg">⋮⋮</span>
                 </button>
-                <h3 className="text-sm font-medium text-gray-900 dark:text-white">
-                  {subtask.title}
-                </h3>
-                {subtask.isTooBig && (
-                  <span className="ml-2 px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full">
-                    Too Big
-                  </span>
-                )}
-              </div>
-              <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                {subtask.description}
-              </p>
-              
-              {subtask.acceptanceCriteria.length > 0 && (
-                <div className="mt-2">
-                  <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Acceptance Criteria:
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <h3 className="text-base font-semibold text-gray-900 dark:text-white">
+                      {subtask.title}
+                    </h3>
+                    {subtask.isTooBig && (
+                      <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 rounded-full">
+                        ⚠️ Too Big
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-4">
+                    {subtask.description}
                   </p>
-                  <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
-                    {subtask.acceptanceCriteria.map((criteria, index) => (
-                      <li key={index} className="flex items-start">
-                        <span className="mr-2">•</span>
-                        <span>{criteria}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+                  
+                  {subtask.acceptanceCriteria.length > 0 && (
+                    <div className="mb-4">
+                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                        <span className="mr-1">✅</span>
+                        Acceptance Criteria:
+                      </p>
+                      <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1 pl-4">
+                        {subtask.acceptanceCriteria.map((criteria, index) => (
+                          <li key={index} className="flex items-start">
+                            <span className="mr-2 text-green-500">•</span>
+                            <span>{criteria}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
 
-              {subtask.guardrails.length > 0 && (
-                <div className="mt-2">
-                  <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Guardrails:
-                  </p>
-                  <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
-                    {subtask.guardrails.map((guardrail, index) => (
-                      <li key={index} className="flex items-start">
-                        <span className="mr-2">⚠️</span>
-                        <span>{guardrail}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  {subtask.guardrails.length > 0 && (
+                    <div className="mb-2">
+                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                        <span className="mr-1">🛡️</span>
+                        Guardrails:
+                      </p>
+                      <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1 pl-4">
+                        {subtask.guardrails.map((guardrail, index) => (
+                          <li key={index} className="flex items-start">
+                            <span className="mr-2 text-orange-500">⚠️</span>
+                            <span>{guardrail}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </>
           )}
         </div>
@@ -153,9 +164,10 @@ function SubtaskCard({ subtask, onUpdate }: { subtask: Subtask; onUpdate: (subta
           <div className="flex items-center space-x-2 ml-4">
             <button
               onClick={() => setIsEditing(true)}
-              className="text-gray-400 hover:text-gray-600 text-sm"
+              className="inline-flex items-center p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              title="Edit task"
             >
-              ✏️
+              <span className="text-sm">✏️</span>
             </button>
           </div>
         )}
@@ -252,10 +264,11 @@ export default function SubtaskListPanel() {
   if (state.isLoading) {
     return (
       <div className="max-w-6xl mx-auto">
-        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
-          <div className="px-6 py-8 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600 dark:text-gray-400">Generating subtasks...</p>
+        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="px-8 py-12 text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-indigo-200 border-t-indigo-600 mx-auto mb-6"></div>
+            <p className="text-gray-600 dark:text-gray-400 text-lg">Generating subtasks...</p>
+            <p className="text-gray-500 dark:text-gray-500 text-sm mt-2">Breaking down your plan into atomic tasks</p>
           </div>
         </div>
       </div>
@@ -264,57 +277,86 @@ export default function SubtaskListPanel() {
 
   return (
     <div className="max-w-6xl mx-auto">
-      <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-lg font-medium text-gray-900 dark:text-white flex items-center">
-            📋 Subtasks
-          </h2>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Review, split, and reorder atomic subtasks with drag-and-drop functionality.
-          </p>
+      <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 px-8 py-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center space-x-3">
+            <span className="text-2xl">📋</span>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                Subtasks Management
+              </h2>
+              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                Review, edit, and reorder atomic subtasks with drag-and-drop functionality.
+              </p>
+            </div>
+          </div>
         </div>
 
-        <div className="px-6 py-4">
+        <div className="px-8 py-8">
           {/* Plan Context */}
           {state.executionPlan && (
-            <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-750 rounded-md">
-              <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
-                Based on Execution Plan:
-              </h3>
-              <div className="text-xs text-gray-600 dark:text-gray-400 max-h-20 overflow-y-auto">
-                {state.executionPlan.content.substring(0, 200)}...
+            <div className="mb-8 p-6 bg-gray-50 dark:bg-gray-750 rounded-lg border border-gray-200 dark:border-gray-600">
+              <div className="flex items-start space-x-3">
+                <span className="text-orange-500 text-lg flex-shrink-0">📋</span>
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+                    Based on Execution Plan:
+                  </h3>
+                  <div className="text-sm text-gray-600 dark:text-gray-400 max-h-24 overflow-y-auto bg-white dark:bg-gray-700 p-3 rounded border">
+                    {state.executionPlan.content.substring(0, 300)}
+                    {state.executionPlan.content.length > 300 && '...'}
+                  </div>
+                </div>
               </div>
             </div>
           )}
 
           {/* No Subtasks Generated */}
           {!state.isLoading && state.subtasks.length === 0 && (
-            <div className="text-center py-8">
-              <p className="text-gray-500 dark:text-gray-400 mb-4">
-                No subtasks generated yet.
-              </p>
-              <button
-                onClick={generateSubtasks}
-                disabled={!state.executionPlan || !state.config}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Generate Subtasks
-              </button>
+            <div className="text-center py-12">
+              <div className="flex flex-col items-center space-y-4">
+                <span className="text-6xl">🤖</span>
+                <div>
+                  <p className="text-gray-600 dark:text-gray-400 text-lg mb-4">
+                    No subtasks generated yet.
+                  </p>
+                  <p className="text-gray-500 dark:text-gray-500 text-sm mb-6">
+                    Generate atomic, actionable subtasks from your execution plan.
+                  </p>
+                </div>
+                <button
+                  onClick={generateSubtasks}
+                  disabled={!state.executionPlan || !state.config}
+                  className="inline-flex items-center px-6 py-3 text-base font-semibold text-white bg-indigo-600 border border-transparent rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-colors"
+                >
+                  <span className="mr-2">✨</span>
+                  Generate Subtasks
+                </button>
+              </div>
             </div>
           )}
 
           {/* Subtasks List */}
           {state.subtasks.length > 0 && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div className="flex justify-between items-center">
-                <h3 className="text-sm font-medium text-gray-900 dark:text-white">
-                  Subtasks ({state.subtasks.length})
-                </h3>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Subtasks ({state.subtasks.length})
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    Drag to reorder • Click edit to modify • Review for completeness
+                  </p>
+                </div>
                 <div className="flex items-center space-x-4">
                   {state.subtasks.some(task => task.isTooBig) && (
-                    <span className="text-xs text-yellow-600 dark:text-yellow-400">
-                      ⚠️ {state.subtasks.filter(task => task.isTooBig).length} tasks may be too large
-                    </span>
+                    <div className="flex items-center space-x-2 px-3 py-1 bg-yellow-100 dark:bg-yellow-900/20 rounded-full">
+                      <span className="text-yellow-600 dark:text-yellow-400 text-sm">⚠️</span>
+                      <span className="text-xs text-yellow-700 dark:text-yellow-300 font-medium">
+                        {state.subtasks.filter(task => task.isTooBig).length} large tasks
+                      </span>
+                    </div>
                   )}
                   <button
                     onClick={() => {
@@ -322,8 +364,9 @@ export default function SubtaskListPanel() {
                       generateSubtasks();
                     }}
                     disabled={state.isLoading}
-                    className="px-3 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded hover:bg-gray-50 dark:hover:bg-gray-500"
+                    className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
                   >
+                    <span className="mr-2">🔄</span>
                     Regenerate
                   </button>
                 </div>
@@ -338,7 +381,7 @@ export default function SubtaskListPanel() {
                   items={state.subtasks.map(task => task.id)}
                   strategy={verticalListSortingStrategy}
                 >
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {state.subtasks.map((subtask) => (
                       <SubtaskCard
                         key={subtask.id}
@@ -350,27 +393,31 @@ export default function SubtaskListPanel() {
                 </SortableContext>
               </DndContext>
 
-              <div className="mt-6 text-sm text-gray-500 dark:text-gray-400">
-                <p className="mb-1">
-                  💡 Drag tasks by the ⋮⋮ handle to reorder them
-                </p>
-                <p className="mb-1">
-                  ✏️ Click the edit button to modify task details
-                </p>
-                <p>
-                  ⚠️ Yellow warning indicates tasks that may be too large and should be split
-                </p>
+              <div className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-400 rounded-lg p-4 mt-6">
+                <div className="flex items-start space-x-3">
+                  <span className="text-blue-500 text-lg flex-shrink-0">💡</span>
+                  <div className="text-sm text-blue-800 dark:text-blue-200">
+                    <p className="font-medium mb-2">Subtask Management Tips:</p>
+                    <ul className="space-y-1 text-sm">
+                      <li>• <span className="font-medium">⋮⋮</span> Drag tasks by the handle to reorder them</li>
+                      <li>• <span className="font-medium">✏️</span> Click the edit button to modify task details</li>
+                      <li>• <span className="font-medium">⚠️</span> Yellow warning indicates tasks that may be too large and should be split</li>
+                      <li>• Each task should be completable in under 2 hours</li>
+                    </ul>
+                  </div>
+                </div>
               </div>
             </div>
           )}
 
           {/* Actions */}
           {state.subtasks.length > 0 && (
-            <div className="mt-6 flex justify-end">
+            <div className="mt-8 flex justify-end">
               <button
                 onClick={handleProceed}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                className="inline-flex items-center px-6 py-3 text-base font-semibold text-white bg-indigo-600 border border-transparent rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-sm transition-colors"
               >
+                <span className="mr-2">🚀</span>
                 Proceed to Approval
               </button>
             </div>
