@@ -18,14 +18,16 @@ export class GitHubClient {
     let owner: string, repo: string, issueNumber: number;
 
     // Parse GitHub URL
-    const urlMatch = urlOrPath.match(/github\.com\/([^\/]+)\/([^\/]+)\/issues\/(\d+)/);
+    const urlMatch = urlOrPath.match(/github\.com\/([^/]+)\/([^/]+)\/issues\/(\d+)/);
     if (urlMatch) {
-      [, owner, repo, issueNumber] = urlMatch;
+      [, owner, repo] = urlMatch;
+      issueNumber = parseInt(urlMatch[3], 10);
     } else {
       // Parse path format: owner/repo/issues/123
-      const pathMatch = urlOrPath.match(/^([^\/]+)\/([^\/]+)\/issues\/(\d+)$/);
+      const pathMatch = urlOrPath.match(/^([^/]+)\/([^/]+)\/issues\/(\d+)$/);
       if (pathMatch) {
-        [, owner, repo, issueNumber] = pathMatch;
+        [, owner, repo] = pathMatch;
+        issueNumber = parseInt(pathMatch[3], 10);
       } else {
         throw new Error('Invalid GitHub issue URL or path format');
       }
@@ -208,7 +210,7 @@ ${subtask.isTooBig ? '\n⚠️ **Warning:** This task may be too large and shoul
       });
 
       return response.ok;
-    } catch (error) {
+    } catch {
       return false;
     }
   }
@@ -227,7 +229,7 @@ ${subtask.isTooBig ? '\n⚠️ **Warning:** This task may be too large and shoul
       });
 
       return response.ok;
-    } catch (error) {
+    } catch {
       return false;
     }
   }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { Config } from '../types';
 import { loadConfig, saveConfig, exportConfig, importConfig } from '../utils/storage';
@@ -7,7 +7,7 @@ import { loadConfig, saveConfig, exportConfig, importConfig } from '../utils/sto
  * Configuration panel for GitHub PAT, repo, and OpenAI API key
  */
 export default function ConfigPanel() {
-  const { state, setConfig, setStep, setError } = useAppContext();
+  const { setConfig, setStep, setError } = useAppContext();
   const [formData, setFormData] = useState<Config>({
     githubPat: '',
     githubRepo: '',
@@ -48,7 +48,7 @@ export default function ConfigPanel() {
       setConfig(formData);
       setError(null);
       setStep(1); // Move to Issue Input step
-    } catch (error) {
+    } catch {
       setError('Failed to save configuration');
     }
   };
@@ -59,7 +59,7 @@ export default function ConfigPanel() {
   const handleExport = () => {
     try {
       exportConfig(formData);
-    } catch (error) {
+    } catch {
       setError('Failed to export configuration');
     }
   };
@@ -78,7 +78,7 @@ export default function ConfigPanel() {
           const config = await importConfig(file);
           setFormData(config);
           setError(null);
-        } catch (error) {
+        } catch {
           setError('Failed to import configuration. Please check the file format.');
         }
       }

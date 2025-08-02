@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -178,17 +178,10 @@ export default function SubtaskListPanel() {
     })
   );
 
-  // Auto-generate subtasks when entering this step
-  useEffect(() => {
-    if (state.executionPlan && state.config && !hasGenerated && state.subtasks.length === 0) {
-      generateSubtasks();
-    }
-  }, [state.executionPlan, state.config, hasGenerated, state.subtasks.length]);
-
   /**
    * Generate subtasks using OpenAI
    */
-  const generateSubtasks = async () => {
+  const generateSubtasks = useCallback(async () => {
     if (!state.executionPlan || !state.config) {
       setError('Execution plan and configuration are required');
       return;
@@ -208,7 +201,14 @@ export default function SubtaskListPanel() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [state.executionPlan, state.config, dispatch, setError, setLoading]);
+
+  // Auto-generate subtasks when entering this step
+  useEffect(() => {
+    if (state.executionPlan && state.config && !hasGenerated && state.subtasks.length === 0) {
+      generateSubtasks();
+    }
+  }, [state.executionPlan, state.config, hasGenerated, state.subtasks.length, generateSubtasks]);
 
   /**
    * Handle drag end event for reordering
