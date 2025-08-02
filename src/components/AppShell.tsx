@@ -20,115 +20,119 @@ const WORKFLOW_STEPS = [
 ];
 
 /**
- * Main application shell with sidebar navigation and step management
+ * Main application shell with left sidebar navigation
  */
 export default function AppShell() {
   const { state, setStep } = useAppContext();
   const { currentStep, isLoading, error } = state;
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const CurrentStepComponent = WORKFLOW_STEPS[currentStep]?.component;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
-      {/* Sidebar Navigation */}
-      <div className={`bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-300 flex-shrink-0 ${
-        sidebarCollapsed ? 'w-16' : 'w-80'
+    <div className="h-screen flex bg-gray-50 dark:bg-gray-900">
+      {/* LEFT SIDEBAR */}
+      <div className={`bg-white dark:bg-gray-800 transition-all duration-300 ease-in-out flex-shrink-0 border-r border-gray-200 dark:border-gray-700 ${
+        sidebarOpen ? 'w-72' : 'w-16'
       }`}>
-        {/* Header */}
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between">
-            <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : ''}`}>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                🔪 {!sidebarCollapsed && 'ChopChop'}
-              </h1>
+        {/* Sidebar Header */}
+        <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200 dark:border-gray-700">
+          {sidebarOpen ? (
+            <div className="flex items-center space-x-3">
+              <span className="text-2xl">🔪</span>
+              <div>
+                <h1 className="text-lg font-bold text-gray-900 dark:text-white">ChopChop</h1>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Issue Decomposer</p>
+              </div>
             </div>
-            <button
-              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            >
-              <span className="text-gray-500 dark:text-gray-400">
-                {sidebarCollapsed ? '→' : '←'}
-              </span>
-            </button>
-          </div>
-          {!sidebarCollapsed && (
-            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-              Universal Issue Decomposer
-            </p>
+          ) : (
+            <span className="text-2xl mx-auto">🔪</span>
           )}
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          >
+            <svg 
+              className="w-5 h-5 text-gray-500 dark:text-gray-400" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              {sidebarOpen ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+              )}
+            </svg>
+          </button>
         </div>
 
-        {/* Workflow Steps Navigation */}
-        <nav className="p-4 space-y-2" aria-label="Workflow Steps">
+        {/* Navigation Steps */}
+        <nav className="flex-1 px-4 py-6 space-y-3">
           {WORKFLOW_STEPS.map((step, index) => {
             const isActive = currentStep === index;
             const isCompleted = currentStep > index;
-            const isDisabled = isLoading;
+            const isUpcoming = currentStep < index;
 
             return (
               <button
                 key={step.id}
                 onClick={() => setStep(index)}
-                disabled={isDisabled}
-                className={`w-full flex items-center p-4 rounded-xl transition-all duration-200 text-left group ${
+                disabled={isLoading}
+                className={`w-full flex items-center text-left p-3 rounded-lg transition-all duration-200 group ${
                   isActive
-                    ? 'bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-700 shadow-sm'
+                    ? 'bg-blue-600 text-white shadow-md'
                     : isCompleted
-                    ? 'bg-green-50 dark:bg-green-900/20 border-2 border-green-200 dark:border-green-700 hover:bg-green-100 dark:hover:bg-green-900/30'
-                    : 'bg-gray-50 dark:bg-gray-700/50 border-2 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
-                } ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                    ? 'bg-green-50 text-green-800 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-200 dark:hover:bg-green-900/30'
+                    : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                } ${isLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
               >
-                <div className={`flex items-center justify-center w-10 h-10 rounded-lg mr-4 ${
+                {/* Step Number/Icon */}
+                <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold mr-3 ${
                   isActive
-                    ? 'bg-blue-500 text-white'
+                    ? 'bg-white/20'
                     : isCompleted
                     ? 'bg-green-500 text-white'
-                    : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-300'
+                    : 'bg-gray-200 text-gray-600 dark:bg-gray-600 dark:text-gray-300'
                 }`}>
-                  <span className="text-sm font-bold">
-                    {isCompleted ? '✓' : index + 1}
-                  </span>
+                  {isCompleted ? '✓' : index + 1}
                 </div>
-                {!sidebarCollapsed && (
+
+                {/* Step Details */}
+                {sidebarOpen && (
                   <div className="flex-1 min-w-0">
-                    <h3 className={`text-sm font-semibold ${
+                    <div className="font-medium text-sm truncate">{step.name}</div>
+                    <div className={`text-xs mt-0.5 ${
                       isActive
-                        ? 'text-blue-900 dark:text-blue-100'
-                        : isCompleted
-                        ? 'text-green-900 dark:text-green-100'
-                        : 'text-gray-900 dark:text-gray-100'
-                    }`}>
-                      {step.name}
-                    </h3>
-                    <p className={`text-xs mt-1 ${
-                      isActive
-                        ? 'text-blue-600 dark:text-blue-300'
+                        ? 'text-blue-100'
                         : isCompleted
                         ? 'text-green-600 dark:text-green-300'
                         : 'text-gray-500 dark:text-gray-400'
                     }`}>
-                      {isActive ? 'Current step' : isCompleted ? 'Completed' : 'Upcoming'}
-                    </p>
+                      {isActive ? 'Current' : isCompleted ? 'Completed' : 'Upcoming'}
+                    </div>
                   </div>
+                )}
+
+                {/* Arrow indicator for current step when collapsed */}
+                {!sidebarOpen && isActive && (
+                  <div className="absolute left-16 w-0 h-0 border-l-4 border-l-blue-600 border-t-4 border-t-transparent border-b-4 border-b-transparent"></div>
                 )}
               </button>
             );
           })}
         </nav>
 
-        {/* Progress Indicator */}
-        {!sidebarCollapsed && (
-          <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-            <div className="mb-2 flex justify-between text-sm">
-              <span className="text-gray-600 dark:text-gray-400">Progress</span>
-              <span className="text-gray-900 dark:text-gray-100 font-medium">
-                {currentStep + 1}/{WORKFLOW_STEPS.length}
-              </span>
+        {/* Progress Bar */}
+        {sidebarOpen && (
+          <div className="px-4 py-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
+              <span>Progress</span>
+              <span>{currentStep + 1} of {WORKFLOW_STEPS.length}</span>
             </div>
             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
               <div
-                className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                className="bg-blue-600 h-2 rounded-full transition-all duration-500"
                 style={{ width: `${((currentStep + 1) / WORKFLOW_STEPS.length) * 100}%` }}
               />
             </div>
@@ -136,23 +140,19 @@ export default function AppShell() {
         )}
       </div>
 
-      {/* Main Content Area */}
+      {/* MAIN CONTENT AREA */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Error Alert */}
         {error && (
-          <div className="m-6 mb-0">
-            <div className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-400 rounded-lg p-6 shadow-sm">
+          <div className="m-6">
+            <div className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-400 rounded-lg p-4">
               <div className="flex">
                 <div className="flex-shrink-0">
-                  <span className="text-red-500 text-xl">⚠️</span>
+                  <span className="text-red-500 text-lg">⚠️</span>
                 </div>
-                <div className="ml-4">
-                  <h3 className="text-base font-semibold text-red-800 dark:text-red-200">
-                    Error
-                  </h3>
-                  <div className="mt-2 text-sm text-red-700 dark:text-red-300 leading-relaxed">
-                    {error}
-                  </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-red-800 dark:text-red-200">Error</h3>
+                  <div className="mt-1 text-sm text-red-700 dark:text-red-300">{error}</div>
                 </div>
               </div>
             </div>
@@ -160,11 +160,11 @@ export default function AppShell() {
         )}
 
         {/* Main Content */}
-        <main className="flex-1 p-6">
+        <main className="flex-1 overflow-auto">
           {isLoading && (
-            <div className="flex flex-col items-center justify-center py-16">
-              <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-200 border-t-blue-600 mb-4"></div>
-              <p className="text-gray-600 dark:text-gray-400 text-lg">Loading...</p>
+            <div className="flex flex-col items-center justify-center h-full">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600 mb-4"></div>
+              <p className="text-gray-600 dark:text-gray-400">Loading...</p>
             </div>
           )}
           
