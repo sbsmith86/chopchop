@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { Config } from '../types';
 import { loadConfig, saveConfig, exportConfig, importConfig } from '../utils/storage';
+import { GitHubClient } from '../utils/github';
 
 /**
  * Configuration panel for GitHub PAT, repo, and OpenAI API key
@@ -16,6 +17,12 @@ export default function ConfigPanel() {
   const [showTokens, setShowTokens] = useState({
     githubPat: false,
     openaiApiKey: false,
+  });
+  const [validationStatus, setValidationStatus] = useState({
+    tokenValid: null as boolean | null,
+    repoReadable: null as boolean | null,
+    repoWritable: null as boolean | null,
+    isValidating: false,
   });
 
   // Load config on mount
@@ -32,6 +39,16 @@ export default function ConfigPanel() {
    */
   const handleInputChange = (field: keyof Config, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // Reset validation status when GitHub-related fields change
+    if (field === 'githubPat' || field === 'githubRepo') {
+      setValidationStatus({
+        tokenValid: null,
+        repoReadable: null,
+        repoWritable: null,
+        isValidating: false,
+      });
+    }
   };
 
   /**
@@ -78,12 +95,200 @@ export default function ConfigPanel() {
           const config = await importConfig(file);
           setFormData(config);
           setError(null);
+          // Reset validation status when importing new config
+          setValidationStatus({
+            tokenValid: null,
+            repoReadable: null,
+            repoWritable: null,
+            isValidating: false,
+          });
         } catch {
           setError('Failed to import configuration. Please check the file format.');
         }
       }
     };
     input.click();
+  };
+
+  /**
+   * Parse repository owner and name from repo string
+   */
+  const parseRepo = (repo: string): { owner: string; name: string } | null => {
+    const match = repo.match(/^([^/]+)\/([^/]+)$/);
+    if (!match) return null;
+    return { owner: match[1], name: match[2] };
+  };
+
+  /**
+   * Validate GitHub token
+   */
+  const validateGitHubToken = async () => {
+    if (!formData.githubPat) {
+      setError('GitHub Personal Access Token is required');
+      return;
+    }
+
+    setValidationStatus(prev => ({ ...prev, isValidating: true }));
+    setError(null);
+
+    try {
+      const client = new GitHubClient(formData.githubPat);
+      const isValid = await client.validateToken();
+      
+      setValidationStatus(prev => ({ 
+        ...prev, 
+        tokenValid: isValid,
+        isValidating: false 
+      }));
+
+      if (!isValid) {
+        setError('Invalid GitHub token. Please check your Personal Access Token.');
+      }
+    } catch {
+      setValidationStatus(prev => ({ 
+        ...prev, 
+        tokenValid: false,
+        isValidating: false 
+      }));
+      setError('Failed to validate GitHub token. Check your internet connection.');
+    }
+  };
+
+  /**
+   * Validate repository read access
+   */
+  const validateRepoRead = async () => {
+    if (!formData.githubPat || !formData.githubRepo) {
+      setError('GitHub PAT and repository are required');
+      return;
+    }
+
+    const repo = parseRepo(formData.githubRepo);
+    if (!repo) {
+      setError('Invalid repository format. Use: owner/repository');
+      return;
+    }
+
+    setValidationStatus(prev => ({ ...prev, isValidating: true }));
+    setError(null);
+
+    try {
+      const client = new GitHubClient(formData.githubPat);
+      const canRead = await client.validateRepository(repo.owner, repo.name);
+      
+      setValidationStatus(prev => ({ 
+        ...prev, 
+        repoReadable: canRead,
+        isValidating: false 
+      }));
+
+      if (!canRead) {
+        setError('Cannot read repository. Check if the repository exists and your token has access.');
+      }
+    } catch {
+      setValidationStatus(prev => ({ 
+        ...prev, 
+        repoReadable: false,
+        isValidating: false 
+      }));
+      setError('Failed to validate repository access. Check your internet connection.');
+    }
+  };
+
+  /**
+   * Validate repository write access by creating a test issue (and immediately closing it)
+   */
+  const validateRepoWrite = async () => {
+    if (!formData.githubPat || !formData.githubRepo) {
+      setError('GitHub PAT and repository are required');
+      return;
+    }
+
+    const repo = parseRepo(formData.githubRepo);
+    if (!repo) {
+      setError('Invalid repository format. Use: owner/repository');
+      return;
+    }
+
+    setValidationStatus(prev => ({ ...prev, isValidating: true }));
+    setError(null);
+
+    try {
+      const client = new GitHubClient(formData.githubPat);
+      
+      // Create a test issue
+      const testIssue = await client.createIssue(
+        repo.owner,
+        repo.name,
+        '[ChopChop Test] Connection Test - Please Ignore',
+        'This is a test issue created by ChopChop to verify write access. It will be closed automatically.\n\n*This issue can be safely deleted.*',
+        ['chopchop-test']
+      );
+
+      // Try to close the test issue immediately
+      try {
+        await fetch(`https://api.github.com/repos/${repo.owner}/${repo.name}/issues/${testIssue.number}`, {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${formData.githubPat}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'Content-Type': 'application/json',
+            'User-Agent': 'ChopChop-Issue-Decomposer',
+          },
+          body: JSON.stringify({ state: 'closed' }),
+        });
+      } catch {
+        // Ignore errors when closing, the main test was successful
+      }
+      
+      setValidationStatus(prev => ({ 
+        ...prev, 
+        repoWritable: true,
+        isValidating: false 
+      }));
+
+    } catch (error) {
+      setValidationStatus(prev => ({ 
+        ...prev, 
+        repoWritable: false,
+        isValidating: false 
+      }));
+      
+      if (error instanceof Error) {
+        if (error.message.includes('Permission denied')) {
+          setError('Cannot create issues in this repository. Your token needs "repo" scope for private repos or "public_repo" for public repos.');
+        } else if (error.message.includes('Repository not found')) {
+          setError('Repository not found. Check the repository path and your access permissions.');
+        } else {
+          setError(`Write access test failed: ${error.message}`);
+        }
+      } else {
+        setError('Failed to test write access. Check your internet connection.');
+      }
+    }
+  };
+
+  /**
+   * Run all validations
+   */
+  const validateAllGitHub = async () => {
+    if (!formData.githubPat || !formData.githubRepo) {
+      setError('GitHub PAT and repository are required');
+      return;
+    }
+
+    // Reset validation status
+    setValidationStatus({
+      tokenValid: null,
+      repoReadable: null,
+      repoWritable: null,
+      isValidating: true,
+    });
+
+    // Run validations sequentially
+    await validateGitHubToken();
+    await validateRepoRead();
+    await validateRepoWrite();
   };
 
   return (
@@ -193,6 +398,118 @@ export default function ConfigPanel() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* GitHub Validation Section */}
+        <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-6">
+          <div className="mb-4">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center">
+              <span className="mr-2">🔍</span>
+              GitHub Connection Test
+            </h3>
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+              Verify that your GitHub setup is working correctly
+            </p>
+          </div>
+
+          {/* Validation Status Indicators */}
+          <div className="space-y-3 mb-6">
+            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
+              <div className="flex items-center">
+                <span className="mr-2">🔐</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Token Authentication</span>
+              </div>
+              <div className="flex items-center">
+                {validationStatus.tokenValid === true && (
+                  <span className="text-green-600 dark:text-green-400">✅ Valid</span>
+                )}
+                {validationStatus.tokenValid === false && (
+                  <span className="text-red-600 dark:text-red-400">❌ Invalid</span>
+                )}
+                {validationStatus.tokenValid === null && (
+                  <span className="text-gray-500 dark:text-gray-400">⏳ Not tested</span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
+              <div className="flex items-center">
+                <span className="mr-2">👁️</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Read Issues</span>
+              </div>
+              <div className="flex items-center">
+                {validationStatus.repoReadable === true && (
+                  <span className="text-green-600 dark:text-green-400">✅ Can read</span>
+                )}
+                {validationStatus.repoReadable === false && (
+                  <span className="text-red-600 dark:text-red-400">❌ Cannot read</span>
+                )}
+                {validationStatus.repoReadable === null && (
+                  <span className="text-gray-500 dark:text-gray-400">⏳ Not tested</span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
+              <div className="flex items-center">
+                <span className="mr-2">✏️</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Create Issues</span>
+              </div>
+              <div className="flex items-center">
+                {validationStatus.repoWritable === true && (
+                  <span className="text-green-600 dark:text-green-400">✅ Can create</span>
+                )}
+                {validationStatus.repoWritable === false && (
+                  <span className="text-red-600 dark:text-red-400">❌ Cannot create</span>
+                )}
+                {validationStatus.repoWritable === null && (
+                  <span className="text-gray-500 dark:text-gray-400">⏳ Not tested</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Validation Buttons */}
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            <button
+              onClick={validateGitHubToken}
+              disabled={validationStatus.isValidating || !formData.githubPat}
+              className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {validationStatus.isValidating ? '⏳' : '🔐'} Test Token
+            </button>
+            
+            <button
+              onClick={validateRepoRead}
+              disabled={validationStatus.isValidating || !formData.githubPat || !formData.githubRepo}
+              className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {validationStatus.isValidating ? '⏳' : '👁️'} Test Read
+            </button>
+            
+            <button
+              onClick={validateRepoWrite}
+              disabled={validationStatus.isValidating || !formData.githubPat || !formData.githubRepo}
+              className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {validationStatus.isValidating ? '⏳' : '✏️'} Test Write
+            </button>
+            
+            <button
+              onClick={validateAllGitHub}
+              disabled={validationStatus.isValidating || !formData.githubPat || !formData.githubRepo}
+              className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {validationStatus.isValidating ? '⏳ Testing...' : '🔍 Test All'}
+            </button>
+          </div>
+
+          {/* Helper Text */}
+          <div className="mt-4 text-xs text-gray-500 dark:text-gray-400">
+            <p>• Token test verifies your GitHub Personal Access Token is valid</p>
+            <p>• Read test checks if you can access the repository and read issues</p>
+            <p>• Write test creates a temporary test issue (then closes it) to verify create permissions</p>
           </div>
         </div>
 
