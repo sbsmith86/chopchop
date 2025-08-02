@@ -79,11 +79,12 @@ export default function ClarificationQuestionPanel() {
 
   if (state.isLoading) {
     return (
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
-          <div className="px-6 py-8 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600 dark:text-gray-400">Generating clarification questions...</p>
+      <div className="max-w-5xl mx-auto">
+        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="px-8 py-12 text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-200 border-t-blue-600 mx-auto mb-6"></div>
+            <p className="text-gray-600 dark:text-gray-400 text-lg">Generating clarification questions...</p>
+            <p className="text-gray-500 dark:text-gray-500 text-sm mt-2">This may take a few moments</p>
           </div>
         </div>
       </div>
@@ -91,63 +92,97 @@ export default function ClarificationQuestionPanel() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-lg font-medium text-gray-900 dark:text-white flex items-center">
-            ❓ Clarifying Questions
-          </h2>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            AI-generated questions to clarify requirements before planning.
-          </p>
+    <div className="max-w-5xl mx-auto">
+      <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 px-8 py-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center space-x-3">
+            <span className="text-2xl">❓</span>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                Clarifying Questions
+              </h2>
+              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                AI-generated questions to clarify requirements before creating the execution plan.
+              </p>
+            </div>
+          </div>
         </div>
 
-        <div className="px-6 py-4">
+        <div className="px-8 py-8">
           {/* Issue Context */}
           {state.issue && (
-            <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-750 rounded-md">
-              <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
-                Issue Context:
-              </h3>
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {state.issue.title}
-              </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-3">
-                {state.issue.body}
-              </p>
+            <div className="mb-8 p-6 bg-gray-50 dark:bg-gray-750 rounded-lg border border-gray-200 dark:border-gray-600">
+              <div className="flex items-start space-x-3">
+                <span className="text-blue-500 text-lg flex-shrink-0">📋</span>
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+                    Issue Context:
+                  </h3>
+                  <p className="text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {state.issue.title}
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed line-clamp-4">
+                    {state.issue.body}
+                  </p>
+                </div>
+              </div>
             </div>
           )}
 
           {/* No Questions Generated */}
           {!state.isLoading && state.clarificationQuestions.length === 0 && (
-            <div className="text-center py-8">
-              <p className="text-gray-500 dark:text-gray-400 mb-4">
-                No clarification questions generated yet.
-              </p>
-              <button
-                onClick={generateQuestions}
-                disabled={!state.issue || !state.config}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Generate Questions
-              </button>
+            <div className="py-12">
+              <div className="text-center">
+                <span className="text-6xl">🤖</span>
+                <p className="text-gray-600 dark:text-gray-400 text-lg mt-4 mb-2">
+                  No clarification questions generated yet.
+                </p>
+                <p className="text-gray-500 dark:text-gray-500 text-sm mb-6">
+                  Click the button below to generate AI-powered questions based on your issue.
+                </p>
+                <button
+                  onClick={generateQuestions}
+                  disabled={!state.issue || !state.config}
+                  className="inline-flex items-center px-6 py-3 text-base font-semibold text-white bg-purple-600 border border-transparent rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-colors"
+                >
+                  <span className="mr-2">✨</span>
+                  Generate Questions
+                </button>
+              </div>
             </div>
           )}
 
           {/* Questions List */}
           {state.clarificationQuestions.length > 0 && (
             <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Questions ({state.clarificationQuestions.length})
+                </h3>
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  {state.clarificationQuestions.filter(q => q.answer?.trim()).length} of {state.clarificationQuestions.length} answered
+                </span>
+              </div>
+              
               {state.clarificationQuestions.map((question, index) => (
-                <div key={question.id} className="border border-gray-200 dark:border-gray-600 rounded-md p-4">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    {index + 1}. {question.question}
-                  </label>
+                <div key={question.id} className="bg-gray-50 dark:bg-gray-750 border border-gray-200 dark:border-gray-600 rounded-lg p-6">
+                  <div className="flex items-start space-x-3 mb-4">
+                    <div className="flex-shrink-0 w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
+                      <span className="text-purple-600 dark:text-purple-400 font-bold text-sm">{index + 1}</span>
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-base font-medium text-gray-900 dark:text-white leading-relaxed">
+                        {question.question}
+                      </label>
+                    </div>
+                  </div>
                   <textarea
                     value={question.answer || ''}
                     onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                    placeholder="Enter your answer here..."
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                    placeholder="Enter your answer here... Be as detailed as needed to clarify the requirements."
+                    rows={4}
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white text-base leading-relaxed transition-colors resize-none"
                   />
                 </div>
               ))}
@@ -156,24 +191,38 @@ export default function ClarificationQuestionPanel() {
 
           {/* Actions */}
           {state.clarificationQuestions.length > 0 && (
-            <div className="mt-6 flex justify-between items-center">
+            <div className="mt-8 flex justify-between items-center">
               <button
                 onClick={handleSkip}
-                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                className="inline-flex items-center px-6 py-3 text-base font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors"
               >
+                <span className="mr-2">⏭️</span>
                 Skip Questions
               </button>
               
-              <div className="flex items-center space-x-3">
-                <span className="text-sm text-gray-500 dark:text-gray-400">
-                  {state.clarificationQuestions.filter(q => q.answer?.trim()).length} of {state.clarificationQuestions.length} answered
-                </span>
+              <div className="flex items-center space-x-4">
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  <span className="font-medium">
+                    {state.clarificationQuestions.filter(q => q.answer?.trim()).length}/{state.clarificationQuestions.length}
+                  </span>
+                  <span className="ml-1">completed</span>
+                </div>
                 <button
                   onClick={handleProceed}
                   disabled={!allQuestionsAnswered}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex items-center px-6 py-3 text-base font-semibold text-white bg-purple-600 border border-transparent rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-colors"
                 >
-                  {allQuestionsAnswered ? 'Proceed to Plan' : 'Answer All Questions'}
+                  {allQuestionsAnswered ? (
+                    <>
+                      <span className="mr-2">🚀</span>
+                      Proceed to Plan
+                    </>
+                  ) : (
+                    <>
+                      <span className="mr-2">📝</span>
+                      Answer All Questions
+                    </>
+                  )}
                 </button>
               </div>
             </div>

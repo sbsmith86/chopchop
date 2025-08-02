@@ -102,109 +102,153 @@ ${task.isTooBig ? '⚠️ **Warning:** This task may be too large and should be 
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-lg font-medium text-gray-900 dark:text-white flex items-center">
-            ✅ Approval & Creation
-          </h2>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Review the final subtasks and create GitHub issues.
-          </p>
+    <div className="max-w-6xl mx-auto">
+      <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 px-8 py-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center space-x-3">
+            <span className="text-2xl">✅</span>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                Final Approval & Issue Creation
+              </h2>
+              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                Review your decomposed subtasks and create GitHub issues automatically.
+              </p>
+            </div>
+          </div>
         </div>
 
-        <div className="px-6 py-4">
-          {/* Summary */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-md">
-              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                {state.subtasks.length}
-              </div>
-              <div className="text-sm text-blue-800 dark:text-blue-300">
-                Total Subtasks
-              </div>
-            </div>
-            
-            <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-md">
-              <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                {state.subtasks.filter(task => !task.isTooBig).length}
-              </div>
-              <div className="text-sm text-green-800 dark:text-green-300">
-                Atomic Tasks
+        <div className="px-8 py-8">
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 p-6 rounded-lg border border-blue-200 dark:border-blue-700">
+              <div className="flex items-center space-x-3">
+                <span className="text-blue-500 text-2xl">📋</span>
+                <div>
+                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                    {state.subtasks.length}
+                  </div>
+                  <div className="text-sm font-medium text-blue-800 dark:text-blue-300">
+                    Total Subtasks
+                  </div>
+                </div>
               </div>
             </div>
             
-            <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-md">
-              <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
-                {state.subtasks.filter(task => task.isTooBig).length}
+            <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 p-6 rounded-lg border border-green-200 dark:border-green-700">
+              <div className="flex items-center space-x-3">
+                <span className="text-green-500 text-2xl">✅</span>
+                <div>
+                  <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                    {state.subtasks.filter(task => !task.isTooBig).length}
+                  </div>
+                  <div className="text-sm font-medium text-green-800 dark:text-green-300">
+                    Atomic Tasks
+                  </div>
+                </div>
               </div>
-              <div className="text-sm text-yellow-800 dark:text-yellow-300">
-                May Need Splitting
+            </div>
+            
+            <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20 p-6 rounded-lg border border-yellow-200 dark:border-yellow-700">
+              <div className="flex items-center space-x-3">
+                <span className="text-yellow-500 text-2xl">⚠️</span>
+                <div>
+                  <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+                    {state.subtasks.filter(task => task.isTooBig).length}
+                  </div>
+                  <div className="text-sm font-medium text-yellow-800 dark:text-yellow-300">
+                    May Need Splitting
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Issue Details */}
           {state.issue && (
-            <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-750 rounded-md">
-              <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
-                Original Issue:
-              </h3>
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {state.issue.title}
-              </p>
-              {state.issue.url && (
-                <a
-                  href={state.issue.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                >
-                  View on GitHub →
-                </a>
-              )}
+            <div className="mb-8 p-6 bg-gray-50 dark:bg-gray-750 rounded-lg border border-gray-200 dark:border-gray-600">
+              <div className="flex items-start space-x-3">
+                <span className="text-blue-500 text-lg flex-shrink-0">📋</span>
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+                    Original Issue:
+                  </h3>
+                  <p className="text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {state.issue.title}
+                  </p>
+                  {state.issue.url && (
+                    <a
+                      href={state.issue.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 font-medium hover:underline"
+                    >
+                      <span className="mr-1">🔗</span>
+                      View on GitHub →
+                    </a>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 
           {/* Configuration Summary */}
           {state.config && (
-            <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-750 rounded-md">
-              <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
-                Target Repository:
-              </h3>
-              <p className="text-sm text-gray-700 dark:text-gray-300">
-                {state.config.githubRepo}
-              </p>
+            <div className="mb-8 p-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
+              <div className="flex items-start space-x-3">
+                <span className="text-blue-500 text-lg flex-shrink-0">🎯</span>
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-200 mb-2">
+                    Target Repository:
+                  </h3>
+                  <p className="text-base font-medium text-blue-800 dark:text-blue-300">
+                    github.com/{state.config.githubRepo}
+                  </p>
+                  <p className="text-sm text-blue-700 dark:text-blue-400 mt-1">
+                    {state.subtasks.length} issues will be created in this repository
+                  </p>
+                </div>
+              </div>
             </div>
           )}
 
           {/* Subtasks Preview */}
           {state.subtasks.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
+            <div className="mb-8">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                 Subtasks to Create:
               </h3>
-              <div className="space-y-2 max-h-64 overflow-y-auto">
+              <div className="space-y-3 max-h-96 overflow-y-auto bg-gray-50 dark:bg-gray-750 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
                 {state.subtasks.map((task, index) => (
                   <div
                     key={task.id}
-                    className={`p-3 border border-gray-200 dark:border-gray-600 rounded-md text-sm ${
-                      task.isTooBig ? 'border-l-4 border-l-yellow-500' : ''
+                    className={`p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-sm ${
+                      task.isTooBig ? 'border-l-4 border-l-yellow-500 bg-yellow-50/50 dark:bg-yellow-900/10' : ''
                     }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-gray-900 dark:text-white">
-                        {index + 1}. {task.title}
-                      </span>
-                      {task.isTooBig && (
-                        <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full">
-                          Too Big
-                        </span>
-                      )}
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <span className="inline-flex items-center justify-center w-6 h-6 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full text-xs font-bold">
+                            {index + 1}
+                          </span>
+                          <span className="font-medium text-gray-900 dark:text-white">
+                            {task.title}
+                          </span>
+                          {task.isTooBig && (
+                            <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 rounded-full">
+                              ⚠️ Too Big
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                          {task.description.length > 150 
+                            ? `${task.description.substring(0, 150)}...` 
+                            : task.description}
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-gray-600 dark:text-gray-400 mt-1">
-                      {task.description.substring(0, 100)}...
-                    </p>
                   </div>
                 ))}
               </div>
@@ -213,58 +257,66 @@ ${task.isTooBig ? '⚠️ **Warning:** This task may be too large and should be 
 
           {/* Created Issues */}
           {createdIssues.length > 0 && (
-            <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
-              <h3 className="text-sm font-medium text-green-800 dark:text-green-200 mb-3">
-                ✅ Successfully Created Issues:
-              </h3>
-              <div className="space-y-2">
-                {createdIssues.map((issue) => (
-                  <div key={issue.number} className="flex items-center justify-between">
-                    <span className="text-sm text-green-700 dark:text-green-300">
-                      #{issue.number}: {issue.title}
-                    </span>
-                    <a
-                      href={issue.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-green-600 dark:text-green-400 hover:underline"
-                    >
-                      View →
-                    </a>
+            <div className="mb-8 p-6 bg-green-50 dark:bg-green-900/20 border-l-4 border-green-400 rounded-lg">
+              <div className="flex items-start space-x-3">
+                <span className="text-green-500 text-lg flex-shrink-0">🎉</span>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-green-800 dark:text-green-200 mb-4">
+                    Successfully Created Issues:
+                  </h3>
+                  <div className="space-y-3">
+                    {createdIssues.map((issue) => (
+                      <div key={issue.number} className="flex items-center justify-between p-3 bg-white dark:bg-green-900/10 rounded-lg border border-green-200 dark:border-green-700">
+                        <div className="flex items-center space-x-3">
+                          <span className="inline-flex items-center justify-center w-8 h-8 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full text-sm font-bold">
+                            #{issue.number}
+                          </span>
+                          <span className="text-base font-medium text-green-800 dark:text-green-200">
+                            {issue.title}
+                          </span>
+                        </div>
+                        <a
+                          href={issue.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center px-3 py-1 text-sm font-medium text-green-700 dark:text-green-300 bg-green-100 dark:bg-green-900/30 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
+                        >
+                          <span className="mr-1">🔗</span>
+                          View Issue
+                        </a>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                </div>
               </div>
             </div>
           )}
 
           {/* Warnings */}
           {state.subtasks.some(task => task.isTooBig) && createdIssues.length === 0 && (
-            <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <span className="text-yellow-400">⚠️</span>
-                </div>
-                <div className="ml-3">
-                  <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
-                    Warning
+            <div className="mb-8 p-6 bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 rounded-lg">
+              <div className="flex items-start space-x-3">
+                <span className="text-yellow-500 text-lg flex-shrink-0">⚠️</span>
+                <div className="flex-1">
+                  <h3 className="text-base font-semibold text-yellow-800 dark:text-yellow-200 mb-2">
+                    Review Recommended
                   </h3>
-                  <div className="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
-                    <p>
-                      {state.subtasks.filter(task => task.isTooBig).length} subtasks are marked as potentially too large.
-                      Consider going back to the Subtasks step to split them into smaller tasks.
-                    </p>
-                  </div>
+                  <p className="text-sm text-yellow-700 dark:text-yellow-300 leading-relaxed">
+                    {state.subtasks.filter(task => task.isTooBig).length} subtasks are marked as potentially too large.
+                    Consider going back to the Subtasks step to split them into smaller, more manageable tasks before creating issues.
+                  </p>
                 </div>
               </div>
             </div>
           )}
 
           {/* Actions */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between pt-6 border-t border-gray-200 dark:border-gray-600">
             <button
               onClick={exportAsMarkdown}
-              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="inline-flex items-center px-6 py-3 text-base font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
             >
+              <span className="mr-2">📥</span>
               Export as Markdown
             </button>
             
@@ -276,13 +328,24 @@ ${task.isTooBig ? '⚠️ **Warning:** This task may be too large and should be 
                   !state.subtasks.length || 
                   isCreating
                 }
-                className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center px-6 py-3 text-base font-semibold text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-colors"
               >
-                {isCreating ? 'Creating Issues...' : `Create ${state.subtasks.length} GitHub Issues`}
+                {isCreating ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                    Creating Issues...
+                  </>
+                ) : (
+                  <>
+                    <span className="mr-2">🚀</span>
+                    Create {state.subtasks.length} GitHub Issues
+                  </>
+                )}
               </button>
             ) : (
-              <div className="text-sm text-green-600 dark:text-green-400 font-medium">
-                ✅ All issues created successfully!
+              <div className="flex items-center space-x-2 text-green-600 dark:text-green-400 font-semibold">
+                <span className="text-lg">🎉</span>
+                <span>All issues created successfully!</span>
               </div>
             )}
           </div>

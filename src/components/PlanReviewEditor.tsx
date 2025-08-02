@@ -73,10 +73,11 @@ export default function PlanReviewEditor() {
   if (state.isLoading) {
     return (
       <div className="max-w-6xl mx-auto">
-        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
-          <div className="px-6 py-8 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600 dark:text-gray-400">Generating execution plan...</p>
+        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="px-8 py-12 text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-orange-200 border-t-orange-600 mx-auto mb-6"></div>
+            <p className="text-gray-600 dark:text-gray-400 text-lg">Generating execution plan...</p>
+            <p className="text-gray-500 dark:text-gray-500 text-sm mt-2">This may take a few moments</p>
           </div>
         </div>
       </div>
@@ -85,97 +86,130 @@ export default function PlanReviewEditor() {
 
   return (
     <div className="max-w-6xl mx-auto">
-      <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-lg font-medium text-gray-900 dark:text-white flex items-center">
-            📋 Plan Review
-          </h2>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Review and edit the AI-generated execution plan before proceeding to subtasks.
-          </p>
+      <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-900/20 dark:to-yellow-900/20 px-8 py-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center space-x-3">
+            <span className="text-2xl">📋</span>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                Execution Plan Review
+              </h2>
+              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                Review and edit the AI-generated execution plan before breaking it down into subtasks.
+              </p>
+            </div>
+          </div>
         </div>
 
-        <div className="px-6 py-4">
+        <div className="px-8 py-8">
           {/* Issue Context */}
           {state.issue && (
-            <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-750 rounded-md">
-              <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
-                Issue Context:
-              </h3>
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {state.issue.title}
-              </p>
-              {state.clarificationQuestions.filter(q => q.answer).length > 0 && (
-                <div className="mt-2">
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-                    Based on {state.clarificationQuestions.filter(q => q.answer).length} clarification answers
+            <div className="mb-8 p-6 bg-gray-50 dark:bg-gray-750 rounded-lg border border-gray-200 dark:border-gray-600">
+              <div className="flex items-start space-x-3">
+                <span className="text-blue-500 text-lg flex-shrink-0">📋</span>
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+                    Issue Context:
+                  </h3>
+                  <p className="text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {state.issue.title}
                   </p>
+                  {state.clarificationQuestions.filter(q => q.answer).length > 0 && (
+                    <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md">
+                      <p className="text-sm text-blue-700 dark:text-blue-300">
+                        💡 Generated with insights from {state.clarificationQuestions.filter(q => q.answer).length} clarification answers
+                      </p>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           )}
 
           {/* No Plan Generated */}
           {!state.isLoading && !planContent && (
-            <div className="text-center py-8">
-              <p className="text-gray-500 dark:text-gray-400 mb-4">
-                No execution plan generated yet.
-              </p>
-              <button
-                onClick={generatePlan}
-                disabled={!state.issue || !state.config}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Generate Plan
-              </button>
+            <div className="text-center py-12">
+              <div className="flex flex-col items-center space-y-4">
+                <span className="text-6xl">🤖</span>
+                <div>
+                  <p className="text-gray-600 dark:text-gray-400 text-lg mb-4">
+                    No execution plan generated yet.
+                  </p>
+                  <p className="text-gray-500 dark:text-gray-500 text-sm mb-6">
+                    Generate an AI-powered execution plan based on your issue and clarifications.
+                  </p>
+                </div>
+                <button
+                  onClick={generatePlan}
+                  disabled={!state.issue || !state.config}
+                  className="inline-flex items-center px-6 py-3 text-base font-semibold text-white bg-orange-600 border border-transparent rounded-lg hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-colors"
+                >
+                  <span className="mr-2">✨</span>
+                  Generate Plan
+                </button>
+              </div>
             </div>
           )}
 
           {/* Markdown Editor */}
           {planContent && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div className="flex justify-between items-center">
-                <h3 className="text-sm font-medium text-gray-900 dark:text-white">
-                  Execution Plan (Markdown)
-                </h3>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Execution Plan
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    Review and edit the plan using markdown formatting
+                  </p>
+                </div>
                 <button
                   onClick={handleRegenerate}
                   disabled={state.isLoading}
-                  className="px-3 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors"
                 >
+                  <span className="mr-2">🔄</span>
                   Regenerate
                 </button>
               </div>
               
-              <div className="border border-gray-300 dark:border-gray-600 rounded-md overflow-hidden">
+              <div className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden shadow-sm">
                 <MDEditor
                   value={planContent}
                   onChange={(value) => setPlanContent(value || '')}
                   preview="edit"
-                  height={400}
+                  height={500}
                   data-color-mode={document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
                 />
               </div>
               
-              <div className="text-sm text-gray-500 dark:text-gray-400">
-                <p className="mb-1">
-                  ✅ Review the generated plan above and make any necessary edits.
-                </p>
-                <p>
-                  ⚠️ This step is required - the plan will be used to generate atomic subtasks in the next step.
-                </p>
+              <div className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-400 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <span className="text-blue-500 text-lg flex-shrink-0">💡</span>
+                  <div className="text-sm text-blue-800 dark:text-blue-200">
+                    <p className="font-medium mb-2">Plan Review Guidelines:</p>
+                    <ul className="space-y-1 text-sm">
+                      <li>• Ensure each step is clear and actionable</li>
+                      <li>• Break down complex tasks into smaller components</li>
+                      <li>• Include any specific requirements or constraints</li>
+                      <li>• This plan will be used to generate atomic subtasks</li>
+                    </ul>
+                  </div>
+                </div>
               </div>
             </div>
           )}
 
           {/* Actions */}
           {planContent && (
-            <div className="mt-6 flex justify-end">
+            <div className="mt-8 flex justify-end">
               <button
                 onClick={handleSaveAndProceed}
                 disabled={!planContent.trim()}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center px-6 py-3 text-base font-semibold text-white bg-orange-600 border border-transparent rounded-lg hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-colors"
               >
+                <span className="mr-2">🚀</span>
                 Save Plan & Generate Subtasks
               </button>
             </div>

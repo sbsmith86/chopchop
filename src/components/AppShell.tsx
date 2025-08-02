@@ -45,7 +45,7 @@ export default function AppShell() {
         </div>
       </header>
 
-      {/* Progress Bar */}
+      {/* Progress Navigation */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex space-x-8 py-4" aria-label="Workflow Steps">
@@ -74,17 +74,17 @@ export default function AppShell() {
 
       {/* Error Alert */}
       {error && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-400 rounded-lg p-6 shadow-sm">
             <div className="flex">
               <div className="flex-shrink-0">
-                <span className="text-red-400">⚠️</span>
+                <span className="text-red-500 text-xl">⚠️</span>
               </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800 dark:text-red-200">
+              <div className="ml-4">
+                <h3 className="text-base font-semibold text-red-800 dark:text-red-200">
                   Error
                 </h3>
-                <div className="mt-2 text-sm text-red-700 dark:text-red-300">
+                <div className="mt-2 text-sm text-red-700 dark:text-red-300 leading-relaxed">
                   {error}
                 </div>
               </div>
@@ -94,10 +94,11 @@ export default function AppShell() {
       )}
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {isLoading && (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+          <div className="flex flex-col items-center justify-center py-16">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-200 border-t-blue-600 mb-4"></div>
+            <p className="text-gray-600 dark:text-gray-400 text-lg">Loading...</p>
           </div>
         )}
         
