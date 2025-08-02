@@ -314,17 +314,15 @@ export default function SubtaskListPanel() {
 
           {/* No Subtasks Generated */}
           {!state.isLoading && state.subtasks.length === 0 && (
-            <div className="text-center py-12">
-              <div className="flex flex-col items-center space-y-4">
+            <div className="py-12">
+              <div className="text-center">
                 <span className="text-6xl">🤖</span>
-                <div>
-                  <p className="text-gray-600 dark:text-gray-400 text-lg mb-4">
-                    No subtasks generated yet.
-                  </p>
-                  <p className="text-gray-500 dark:text-gray-500 text-sm mb-6">
-                    Generate atomic, actionable subtasks from your execution plan.
-                  </p>
-                </div>
+                <p className="text-gray-600 dark:text-gray-400 text-lg mt-4 mb-2">
+                  No subtasks generated yet.
+                </p>
+                <p className="text-gray-500 dark:text-gray-500 text-sm mb-6">
+                  Generate atomic, actionable subtasks from your execution plan.
+                </p>
                 <button
                   onClick={generateSubtasks}
                   disabled={!state.executionPlan || !state.config}
