@@ -79,12 +79,14 @@ export default function ClarificationQuestionPanel() {
 
   if (state.isLoading) {
     return (
-      <div className="max-w-5xl mx-auto">
-        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="px-8 py-12 text-center">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-200 border-t-blue-600 mx-auto mb-6"></div>
-            <p className="text-gray-600 dark:text-gray-400 text-lg">Generating clarification questions...</p>
-            <p className="text-gray-500 dark:text-gray-500 text-sm mt-2">This may take a few moments</p>
+      <div className="h-full">
+        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl border border-gray-200 dark:border-gray-700 h-full flex flex-col">
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-200 border-t-blue-600 mx-auto mb-6"></div>
+              <p className="text-gray-600 dark:text-gray-400 text-lg">Generating clarification questions...</p>
+              <p className="text-gray-500 dark:text-gray-500 text-sm mt-2">This may take a few moments</p>
+            </div>
           </div>
         </div>
       </div>
@@ -92,10 +94,10 @@ export default function ClarificationQuestionPanel() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto">
-      <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div className="h-full">
+      <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl border border-gray-200 dark:border-gray-700 h-full flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 px-8 py-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
           <div className="flex items-center space-x-3">
             <span className="text-2xl">❓</span>
             <div>
@@ -109,10 +111,10 @@ export default function ClarificationQuestionPanel() {
           </div>
         </div>
 
-        <div className="px-8 py-8">
+        <div className="flex-1 overflow-auto">
           {/* Issue Context */}
           {state.issue && (
-            <div className="mb-8 p-6 bg-gray-50 dark:bg-gray-750 rounded-lg border border-gray-200 dark:border-gray-600">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-750">
               <div className="flex items-start space-x-3">
                 <span className="text-blue-500 text-lg flex-shrink-0">📋</span>
                 <div className="flex-1">
@@ -130,68 +132,86 @@ export default function ClarificationQuestionPanel() {
             </div>
           )}
 
-          {/* No Questions Generated */}
-          {!state.isLoading && state.clarificationQuestions.length === 0 && (
-            <div className="py-12">
-              <div className="text-center">
-                <span className="text-6xl">🤖</span>
-                <p className="text-gray-600 dark:text-gray-400 text-lg mt-4 mb-2">
-                  No clarification questions generated yet.
-                </p>
-                <p className="text-gray-500 dark:text-gray-500 text-sm mb-6">
-                  Click the button below to generate AI-powered questions based on your issue.
-                </p>
-                <button
-                  onClick={generateQuestions}
-                  disabled={!state.issue || !state.config}
-                  className="inline-flex items-center px-6 py-3 text-base font-semibold text-white bg-purple-600 border border-transparent rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-colors"
-                >
-                  <span className="mr-2">✨</span>
-                  Generate Questions
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Questions List */}
-          {state.clarificationQuestions.length > 0 && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Questions ({state.clarificationQuestions.length})
-                </h3>
-                <span className="text-sm text-gray-500 dark:text-gray-400">
-                  {state.clarificationQuestions.filter(q => q.answer?.trim()).length} of {state.clarificationQuestions.length} answered
-                </span>
-              </div>
-              
-              {state.clarificationQuestions.map((question, index) => (
-                <div key={question.id} className="bg-gray-50 dark:bg-gray-750 border border-gray-200 dark:border-gray-600 rounded-lg p-6">
-                  <div className="flex items-start space-x-3 mb-4">
-                    <div className="flex-shrink-0 w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
-                      <span className="text-purple-600 dark:text-purple-400 font-bold text-sm">{index + 1}</span>
-                    </div>
-                    <div className="flex-1">
-                      <label className="block text-base font-medium text-gray-900 dark:text-white leading-relaxed">
-                        {question.question}
-                      </label>
-                    </div>
-                  </div>
-                  <textarea
-                    value={question.answer || ''}
-                    onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                    placeholder="Enter your answer here... Be as detailed as needed to clarify the requirements."
-                    rows={4}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white text-base leading-relaxed transition-colors resize-none"
-                  />
+          <div className="p-6">
+            {/* No Questions Generated */}
+            {!state.isLoading && state.clarificationQuestions.length === 0 && (
+              <div className="py-12">
+                <div className="text-center">
+                  <span className="text-6xl">🤖</span>
+                  <p className="text-gray-600 dark:text-gray-400 text-lg mt-4 mb-2">
+                    No clarification questions generated yet.
+                  </p>
+                  <p className="text-gray-500 dark:text-gray-500 text-sm mb-6">
+                    Click the button below to generate AI-powered questions based on your issue.
+                  </p>
+                  <button
+                    onClick={generateQuestions}
+                    disabled={!state.issue || !state.config}
+                    className="inline-flex items-center px-6 py-3 text-base font-semibold text-white bg-purple-600 border border-transparent rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-colors"
+                  >
+                    <span className="mr-2">✨</span>
+                    Generate Questions
+                  </button>
                 </div>
-              ))}
-            </div>
-          )}
+              </div>
+            )}
 
-          {/* Actions */}
-          {state.clarificationQuestions.length > 0 && (
-            <div className="mt-8 flex justify-between items-center">
+            {/* Questions List - New Grid Layout */}
+            {state.clarificationQuestions.length > 0 && (
+              <div className="space-y-8">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Questions ({state.clarificationQuestions.length})
+                  </h3>
+                  <span className="text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full">
+                    {state.clarificationQuestions.filter(q => q.answer?.trim()).length} of {state.clarificationQuestions.length} answered
+                  </span>
+                </div>
+                
+                {/* Questions in a responsive grid */}
+                <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-1">
+                  {state.clarificationQuestions.map((question, index) => (
+                    <div key={question.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                      {/* Question Header */}
+                      <div className="flex items-start space-x-4 mb-4">
+                        <div className="flex-shrink-0 w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
+                          <span className="text-purple-600 dark:text-purple-400 font-bold text-sm">{index + 1}</span>
+                        </div>
+                        <div className="flex-1">
+                          <label className="block text-base font-medium text-gray-900 dark:text-white leading-relaxed">
+                            {question.question}
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* Answer Input */}
+                      <div className="ml-12">
+                        <textarea
+                          value={question.answer || ''}
+                          onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                          placeholder="Enter your answer here... Be as detailed as needed to clarify the requirements."
+                          rows={4}
+                          className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white text-base leading-relaxed transition-colors resize-none"
+                        />
+                        {question.answer?.trim() && (
+                          <div className="mt-2 flex items-center text-sm text-green-600 dark:text-green-400">
+                            <span className="mr-1">✓</span>
+                            Answer provided
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Actions Footer */}
+        {state.clarificationQuestions.length > 0 && (
+          <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-750 flex-shrink-0">
+            <div className="flex justify-between items-center">
               <button
                 onClick={handleSkip}
                 className="inline-flex items-center px-6 py-3 text-base font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors"
@@ -226,8 +246,8 @@ export default function ClarificationQuestionPanel() {
                 </button>
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

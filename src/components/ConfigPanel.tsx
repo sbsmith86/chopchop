@@ -334,10 +334,10 @@ Are you sure you want to save these changes?`;
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="bg-white dark:bg-gray-800 shadow rounded-lg border border-gray-200 dark:border-gray-700">
+    <div className="h-full">
+      <div className="bg-white dark:bg-gray-800 shadow rounded-lg border border-gray-200 dark:border-gray-700 h-full flex flex-col">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
           <h2 className="text-lg font-medium text-gray-900 dark:text-white flex items-center">
             <span className="mr-2">⚙️</span>
             Settings / Configuration
@@ -348,7 +348,7 @@ Are you sure you want to save these changes?`;
         </div>
 
         {/* Private Repository Guide */}
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border-b border-yellow-200 dark:border-yellow-800 px-6 py-4">
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border-b border-yellow-200 dark:border-yellow-800 px-6 py-4 flex-shrink-0">
           <div className="flex">
             <span className="text-yellow-600 mr-3">💡</span>
             <div>
@@ -370,193 +370,196 @@ Are you sure you want to save these changes?`;
           </div>
         </div>
 
-        {/* Configuration Form */}
-        <div className="px-6 py-6">
-          <div className="space-y-6">
-            {/* GitHub Repository */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                GitHub Repository
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <span className="text-gray-500 dark:text-gray-400 text-sm">github.com/</span>
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-auto">
+          {/* Configuration Form */}
+          <div className="px-6 py-6">
+            <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-1">
+              {/* GitHub Repository */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  GitHub Repository
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <span className="text-gray-500 dark:text-gray-400 text-sm">github.com/</span>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="owner/repository"
+                    value={formData.githubRepo}
+                    onChange={(e) => handleInputChange('githubRepo', e.target.value)}
+                    className="w-full pl-24 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  />
                 </div>
-                <input
-                  type="text"
-                  placeholder="owner/repository"
-                  value={formData.githubRepo}
-                  onChange={(e) => handleInputChange('githubRepo', e.target.value)}
-                  className="w-full pl-24 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Include the owner/organization name and repository name
+                </p>
               </div>
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Include the owner/organization name and repository name
+
+              {/* GitHub PAT */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  GitHub Personal Access Token
+                </label>
+                <div className="relative">
+                  <input
+                    type={showTokens.githubPat ? 'text' : 'password'}
+                    placeholder="Enter your GitHub PAT"
+                    value={formData.githubPat}
+                    onChange={(e) => handleInputChange('githubPat', e.target.value)}
+                    className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowTokens(prev => ({ ...prev, githubPat: !prev.githubPat }))}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                  >
+                    <span className="text-sm">{showTokens.githubPat ? '🙈' : '👁️'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* OpenAI API Key */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  OpenAI API Key
+                </label>
+                <div className="relative">
+                  <input
+                    type={showTokens.openaiApiKey ? 'text' : 'password'}
+                    placeholder="Enter your OpenAI API key"
+                    value={formData.openaiApiKey}
+                    onChange={(e) => handleInputChange('openaiApiKey', e.target.value)}
+                    className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowTokens(prev => ({ ...prev, openaiApiKey: !prev.openaiApiKey }))}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                  >
+                    <span className="text-sm">{showTokens.openaiApiKey ? '🙈' : '👁️'}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* GitHub Validation Section */}
+          <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-6">
+            <div className="mb-4">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center">
+                <span className="mr-2">🔍</span>
+                GitHub Connection Test
+              </h3>
+              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                Verify that your GitHub setup is working correctly
               </p>
             </div>
 
-            {/* GitHub PAT */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                GitHub Personal Access Token
-              </label>
-              <div className="relative">
-                <input
-                  type={showTokens.githubPat ? 'text' : 'password'}
-                  placeholder="Enter your GitHub PAT"
-                  value={formData.githubPat}
-                  onChange={(e) => handleInputChange('githubPat', e.target.value)}
-                  className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowTokens(prev => ({ ...prev, githubPat: !prev.githubPat }))}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                >
-                  <span className="text-sm">{showTokens.githubPat ? '🙈' : '👁️'}</span>
-                </button>
+            {/* Validation Status Indicators */}
+            <div className="space-y-3 mb-6">
+              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
+                <div className="flex items-center">
+                  <span className="mr-2">🔐</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Token Authentication</span>
+                </div>
+                <div className="flex items-center">
+                  {validationStatus.tokenValid === true && (
+                    <span className="text-green-600 dark:text-green-400">✅ Valid</span>
+                  )}
+                  {validationStatus.tokenValid === false && (
+                    <span className="text-red-600 dark:text-red-400">❌ Invalid</span>
+                  )}
+                  {validationStatus.tokenValid === null && (
+                    <span className="text-gray-500 dark:text-gray-400">⏳ Not tested</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
+                <div className="flex items-center">
+                  <span className="mr-2">👁️</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Read Issues</span>
+                </div>
+                <div className="flex items-center">
+                  {validationStatus.repoReadable === true && (
+                    <span className="text-green-600 dark:text-green-400">✅ Can read</span>
+                  )}
+                  {validationStatus.repoReadable === false && (
+                    <span className="text-red-600 dark:text-red-400">❌ Cannot read</span>
+                  )}
+                  {validationStatus.repoReadable === null && (
+                    <span className="text-gray-500 dark:text-gray-400">⏳ Not tested</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
+                <div className="flex items-center">
+                  <span className="mr-2">✏️</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Create Issues</span>
+                </div>
+                <div className="flex items-center">
+                  {validationStatus.repoWritable === true && (
+                    <span className="text-green-600 dark:text-green-400">✅ Can create</span>
+                  )}
+                  {validationStatus.repoWritable === false && (
+                    <span className="text-red-600 dark:text-red-400">❌ Cannot create</span>
+                  )}
+                  {validationStatus.repoWritable === null && (
+                    <span className="text-gray-500 dark:text-gray-400">⏳ Not tested</span>
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* OpenAI API Key */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                OpenAI API Key
-              </label>
-              <div className="relative">
-                <input
-                  type={showTokens.openaiApiKey ? 'text' : 'password'}
-                  placeholder="Enter your OpenAI API key"
-                  value={formData.openaiApiKey}
-                  onChange={(e) => handleInputChange('openaiApiKey', e.target.value)}
-                  className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowTokens(prev => ({ ...prev, openaiApiKey: !prev.openaiApiKey }))}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                >
-                  <span className="text-sm">{showTokens.openaiApiKey ? '🙈' : '👁️'}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* GitHub Validation Section */}
-        <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-6">
-          <div className="mb-4">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center">
-              <span className="mr-2">🔍</span>
-              GitHub Connection Test
-            </h3>
-            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-              Verify that your GitHub setup is working correctly
-            </p>
-          </div>
-
-          {/* Validation Status Indicators */}
-          <div className="space-y-3 mb-6">
-            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
-              <div className="flex items-center">
-                <span className="mr-2">🔐</span>
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Token Authentication</span>
-              </div>
-              <div className="flex items-center">
-                {validationStatus.tokenValid === true && (
-                  <span className="text-green-600 dark:text-green-400">✅ Valid</span>
-                )}
-                {validationStatus.tokenValid === false && (
-                  <span className="text-red-600 dark:text-red-400">❌ Invalid</span>
-                )}
-                {validationStatus.tokenValid === null && (
-                  <span className="text-gray-500 dark:text-gray-400">⏳ Not tested</span>
-                )}
-              </div>
+            {/* Validation Buttons */}
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <button
+                onClick={validateGitHubToken}
+                disabled={validationStatus.isValidating || !formData.githubPat}
+                className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {validationStatus.isValidating ? '⏳' : '🔐'} Test Token
+              </button>
+              
+              <button
+                onClick={validateRepoRead}
+                disabled={validationStatus.isValidating || !formData.githubPat || !formData.githubRepo}
+                className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {validationStatus.isValidating ? '⏳' : '👁️'} Test Read
+              </button>
+              
+              <button
+                onClick={validateRepoWrite}
+                disabled={validationStatus.isValidating || !formData.githubPat || !formData.githubRepo}
+                className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {validationStatus.isValidating ? '⏳' : '✏️'} Test Write
+              </button>
+              
+              <button
+                onClick={validateAllGitHub}
+                disabled={validationStatus.isValidating || !formData.githubPat || !formData.githubRepo}
+                className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {validationStatus.isValidating ? '⏳ Testing...' : '🔍 Test All'}
+              </button>
             </div>
 
-            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
-              <div className="flex items-center">
-                <span className="mr-2">👁️</span>
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Read Issues</span>
-              </div>
-              <div className="flex items-center">
-                {validationStatus.repoReadable === true && (
-                  <span className="text-green-600 dark:text-green-400">✅ Can read</span>
-                )}
-                {validationStatus.repoReadable === false && (
-                  <span className="text-red-600 dark:text-red-400">❌ Cannot read</span>
-                )}
-                {validationStatus.repoReadable === null && (
-                  <span className="text-gray-500 dark:text-gray-400">⏳ Not tested</span>
-                )}
-              </div>
+            {/* Helper Text */}
+            <div className="mt-4 text-xs text-gray-500 dark:text-gray-400">
+              <p>• Token test verifies your GitHub Personal Access Token is valid</p>
+              <p>• Read test checks if you can access the repository and read issues</p>
+              <p>• Write test creates a temporary test issue (then closes it) to verify create permissions</p>
             </div>
-
-            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
-              <div className="flex items-center">
-                <span className="mr-2">✏️</span>
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Create Issues</span>
-              </div>
-              <div className="flex items-center">
-                {validationStatus.repoWritable === true && (
-                  <span className="text-green-600 dark:text-green-400">✅ Can create</span>
-                )}
-                {validationStatus.repoWritable === false && (
-                  <span className="text-red-600 dark:text-red-400">❌ Cannot create</span>
-                )}
-                {validationStatus.repoWritable === null && (
-                  <span className="text-gray-500 dark:text-gray-400">⏳ Not tested</span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Validation Buttons */}
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <button
-              onClick={validateGitHubToken}
-              disabled={validationStatus.isValidating || !formData.githubPat}
-              className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {validationStatus.isValidating ? '⏳' : '🔐'} Test Token
-            </button>
-            
-            <button
-              onClick={validateRepoRead}
-              disabled={validationStatus.isValidating || !formData.githubPat || !formData.githubRepo}
-              className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {validationStatus.isValidating ? '⏳' : '👁️'} Test Read
-            </button>
-            
-            <button
-              onClick={validateRepoWrite}
-              disabled={validationStatus.isValidating || !formData.githubPat || !formData.githubRepo}
-              className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {validationStatus.isValidating ? '⏳' : '✏️'} Test Write
-            </button>
-            
-            <button
-              onClick={validateAllGitHub}
-              disabled={validationStatus.isValidating || !formData.githubPat || !formData.githubRepo}
-              className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {validationStatus.isValidating ? '⏳ Testing...' : '🔍 Test All'}
-            </button>
-          </div>
-
-          {/* Helper Text */}
-          <div className="mt-4 text-xs text-gray-500 dark:text-gray-400">
-            <p>• Token test verifies your GitHub Personal Access Token is valid</p>
-            <p>• Read test checks if you can access the repository and read issues</p>
-            <p>• Write test creates a temporary test issue (then closes it) to verify create permissions</p>
           </div>
         </div>
 
         {/* Actions Footer */}
-        <div className="bg-gray-50 dark:bg-gray-750 border-t border-gray-200 dark:border-gray-700 px-6 py-4">
+        <div className="bg-gray-50 dark:bg-gray-750 border-t border-gray-200 dark:border-gray-700 px-6 py-4 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex space-x-3">
               <button

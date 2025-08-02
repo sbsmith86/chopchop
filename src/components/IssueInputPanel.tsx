@@ -77,10 +77,10 @@ export default function IssueInputPanel() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto">
-      <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div className="h-full">
+      <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl border border-gray-200 dark:border-gray-700 h-full flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 px-8 py-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
           <div className="flex items-center space-x-3">
             <span className="text-2xl">📝</span>
             <div>
@@ -94,7 +94,8 @@ export default function IssueInputPanel() {
           </div>
         </div>
 
-        <div className="px-8 py-8">
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-auto p-6">
           {/* Input Type Selection */}
           <div className="mb-8">
             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
@@ -196,8 +197,10 @@ export default function IssueInputPanel() {
               </div>
             </div>
           )}
+        </div>
 
-          {/* Action Button */}
+        {/* Action Button Footer */}
+        <div className="border-t border-gray-200 dark:border-gray-700 p-6 flex-shrink-0">
           <div className="flex justify-end">
             <button
               onClick={handleLoadIssue}
