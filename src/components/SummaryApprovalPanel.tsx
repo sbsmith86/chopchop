@@ -1,13 +1,14 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { CreatedIssue } from '../types';
 import { GitHubClient } from '../utils/github';
 
 /**
- * Summary and approval panel for final issue creation
+ * Summary and approval panel component
+ * Final review before creating GitHub issues
  */
-export default function SummaryApprovalPanel() {
-  const { state, setError, setLoading } = useAppContext();
+export const SummaryApprovalPanel: React.FC = () => {
+  const { state, setError, setLoading, resetState } = useAppContext();
   const [createdIssues, setCreatedIssues] = useState<CreatedIssue[]>([]);
   const [isCreating, setIsCreating] = useState(false);
 
@@ -34,10 +35,10 @@ export default function SummaryApprovalPanel() {
 
     try {
       const githubClient = new GitHubClient(state.config.githubPat);
-      
+
       const parentTitle = state.issue?.title || 'Decomposed Issue';
       const parentUrl = state.issue?.url;
-      
+
       const created = await githubClient.createSubtaskIssues(
         owner,
         repo,
@@ -45,7 +46,7 @@ export default function SummaryApprovalPanel() {
         parentTitle,
         parentUrl
       );
-      
+
       setCreatedIssues(created);
       setError(null);
     } catch (error) {
@@ -90,284 +91,269 @@ ${task.isTooBig ? '⚠️ **Warning:** This task may be too large and should be 
 
     const blob = new Blob([markdown], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
-    
+
     const link = document.createElement('a');
     link.href = url;
     link.download = 'issue-decomposition.md';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
+
     URL.revokeObjectURL(url);
   };
 
   return (
-    <div className="h-full">
-      <div className="h-full flex flex-col">
-        {/* Header */}
-        <div className="px-6 py-6 border-b border-gray-100 flex-shrink-0">
-          <div className="flex items-start space-x-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center text-white text-xl shadow-lg">
-              ✅
+    <div className="p-8">
+      <div className="max-w-3xl mx-auto">
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Summary & Approval</h2>
+        <p className="text-gray-600 mb-8">
+          Review your decomposed subtasks and create GitHub issues automatically with one click.
+        </p>
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-100 p-6 rounded-xl border border-blue-200 shadow-sm">
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <span className="text-blue-600 text-xl">📊</span>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-blue-600">
+                  {state.subtasks.length}
+                </div>
+                <div className="text-sm font-medium text-blue-800">
+                  Total Subtasks
+                </div>
+              </div>
             </div>
-            <div className="flex-1">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                Final Review & Approval
-              </h2>
-              <p className="text-gray-600 leading-relaxed">
-                Review your decomposed subtasks and create GitHub issues automatically with one click.
-              </p>
+          </div>
+
+          <div className="bg-gradient-to-br from-green-50 to-emerald-100 p-6 rounded-xl border border-green-200 shadow-sm">
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <span className="text-green-600 text-xl">✅</span>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-green-600">
+                  {state.subtasks.filter(task => !task.isTooBig).length}
+                </div>
+                <div className="text-sm font-medium text-green-800">
+                  Atomic Tasks
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-orange-50 to-yellow-100 p-6 rounded-xl border border-orange-200 shadow-sm">
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                <span className="text-orange-600 text-xl">⚠️</span>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-orange-600">
+                  {state.subtasks.filter(task => task.isTooBig).length}
+                </div>
+                <div className="text-sm font-medium text-orange-800">
+                  May Need Splitting
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Scrollable Content */}
-        <div className="flex-1 overflow-auto p-6">
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-100 p-6 rounded-xl border border-blue-200 shadow-sm">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <span className="text-blue-600 text-xl">📊</span>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-blue-600">
-                    {state.subtasks.length}
-                  </div>
-                  <div className="text-sm font-medium text-blue-800">
-                    Total Subtasks
-                  </div>
-                </div>
+        {/* Issue Details */}
+        {state.issue && (
+          <div className="mb-8 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+            <div className="flex items-start space-x-3">
+              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <span className="text-blue-600">📋</span>
               </div>
-            </div>
-            
-            <div className="bg-gradient-to-br from-green-50 to-emerald-100 p-6 rounded-xl border border-green-200 shadow-sm">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                  <span className="text-green-600 text-xl">✅</span>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-green-600">
-                    {state.subtasks.filter(task => !task.isTooBig).length}
-                  </div>
-                  <div className="text-sm font-medium text-green-800">
-                    Atomic Tasks
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-gradient-to-br from-orange-50 to-yellow-100 p-6 rounded-xl border border-orange-200 shadow-sm">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                  <span className="text-orange-600 text-xl">⚠️</span>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-orange-600">
-                    {state.subtasks.filter(task => task.isTooBig).length}
-                  </div>
-                  <div className="text-sm font-medium text-orange-800">
-                    May Need Splitting
-                  </div>
-                </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">
+                  Original Issue
+                </h3>
+                <p className="text-base font-medium text-gray-700 mb-2">
+                  {state.issue.title}
+                </p>
+                {state.issue.url && (
+                  <a
+                    href={state.issue.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center px-3 py-1 text-sm font-medium text-blue-700 bg-blue-100 rounded-lg hover:bg-blue-200 transition-colors"
+                  >
+                    <span className="mr-1">🔗</span>
+                    View on GitHub →
+                  </a>
+                )}
               </div>
             </div>
           </div>
+        )}
 
-          {/* Issue Details */}
-          {state.issue && (
-            <div className="mb-8 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
-              <div className="flex items-start space-x-3">
-                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <span className="text-blue-600">📋</span>
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-sm font-semibold text-gray-900 mb-3">
-                    Original Issue
-                  </h3>
-                  <p className="text-base font-medium text-gray-700 mb-2">
-                    {state.issue.title}
-                  </p>
-                  {state.issue.url && (
-                    <a
-                      href={state.issue.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center px-3 py-1 text-sm font-medium text-blue-700 bg-blue-100 rounded-lg hover:bg-blue-200 transition-colors"
-                    >
-                      <span className="mr-1">🔗</span>
-                      View on GitHub →
-                    </a>
-                  )}
-                </div>
+        {/* Configuration Summary */}
+        {state.config && (
+          <div className="mb-8 p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100">
+            <div className="flex items-start space-x-3">
+              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <span className="text-green-600">🎯</span>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-green-900 mb-2">
+                  Target Repository
+                </h3>
+                <p className="text-base font-medium text-green-800">
+                  github.com/{state.config.githubRepo}
+                </p>
+                <p className="text-sm text-green-700 mt-1">
+                  {state.subtasks.length} issues will be created in this repository
+                </p>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Configuration Summary */}
-          {state.config && (
-            <div className="mb-8 p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100">
-              <div className="flex items-start space-x-3">
-                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <span className="text-green-600">🎯</span>
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-sm font-semibold text-green-900 mb-2">
-                    Target Repository
-                  </h3>
-                  <p className="text-base font-medium text-green-800">
-                    github.com/{state.config.githubRepo}
-                  </p>
-                  <p className="text-sm text-green-700 mt-1">
-                    {state.subtasks.length} issues will be created in this repository
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Subtasks Preview */}
-          {state.subtasks.length > 0 && (
-            <div className="mb-8">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Subtasks to Create
-              </h3>
-              <div className="space-y-3 max-h-96 overflow-y-auto bg-gray-50 rounded-xl p-4 border border-gray-200">
-                {state.subtasks.map((task, index) => (
-                  <div
-                    key={task.id}
-                    className={`p-4 bg-white border rounded-xl shadow-sm ${
-                      task.isTooBig 
-                        ? 'border-l-4 border-l-orange-400 bg-gradient-to-r from-orange-50 to-yellow-50 border-orange-200' 
-                        : 'border-gray-200'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <span className="inline-flex items-center justify-center w-6 h-6 bg-blue-100 text-blue-600 rounded-full text-xs font-bold">
-                            {index + 1}
+        {/* Subtasks Preview */}
+        {state.subtasks.length > 0 && (
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Subtasks to Create
+            </h3>
+            <div className="space-y-3 max-h-96 overflow-y-auto bg-gray-50 rounded-xl p-4 border border-gray-200">
+              {state.subtasks.map((task, index) => (
+                <div
+                  key={task.id}
+                  className={`p-4 bg-white border rounded-xl shadow-sm ${
+                    task.isTooBig
+                      ? 'border-l-4 border-l-orange-400 bg-gradient-to-r from-orange-50 to-yellow-50 border-orange-200'
+                      : 'border-gray-200'
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <span className="inline-flex items-center justify-center w-6 h-6 bg-blue-100 text-blue-600 rounded-full text-xs font-bold">
+                          {index + 1}
+                        </span>
+                        <span className="font-medium text-gray-900">
+                          {task.title}
+                        </span>
+                        {task.isTooBig && (
+                          <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 rounded-full">
+                            ⚠️ Too Big
                           </span>
-                          <span className="font-medium text-gray-900">
-                            {task.title}
-                          </span>
-                          {task.isTooBig && (
-                            <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 rounded-full">
-                              ⚠️ Too Big
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-600 leading-relaxed">
-                          {task.description.length > 150 
-                            ? `${task.description.substring(0, 150)}...` 
-                            : task.description}
-                        </p>
+                        )}
                       </div>
+                      <p className="text-sm text-gray-600 leading-relaxed">
+                        {task.description.length > 150
+                          ? `${task.description.substring(0, 150)}...`
+                          : task.description}
+                      </p>
                     </div>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
-          )}
-
-          {/* Created Issues */}
-          {createdIssues.length > 0 && (
-            <div className="mb-8 p-6 bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-400 rounded-xl">
-              <div className="flex items-start space-x-3">
-                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <span className="text-green-600">🎉</span>
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-green-800 mb-4">
-                    Successfully Created Issues
-                  </h3>
-                  <div className="space-y-3">
-                    {createdIssues.map((issue) => (
-                      <div key={issue.number} className="flex items-center justify-between p-3 bg-white rounded-lg border border-green-200">
-                        <div className="flex items-center space-x-3">
-                          <span className="inline-flex items-center justify-center w-8 h-8 bg-green-100 text-green-600 rounded-full text-sm font-bold">
-                            #{issue.number}
-                          </span>
-                          <span className="text-base font-medium text-green-800">
-                            {issue.title}
-                          </span>
-                        </div>
-                        <a
-                          href={issue.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center px-3 py-1 text-sm font-medium text-green-700 bg-green-100 rounded-lg hover:bg-green-200 transition-colors"
-                        >
-                          <span className="mr-1">🔗</span>
-                          View Issue
-                        </a>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Warnings */}
-          {state.subtasks.some(task => task.isTooBig) && createdIssues.length === 0 && (
-            <div className="mb-8 p-6 bg-gradient-to-r from-orange-50 to-yellow-50 border-l-4 border-orange-400 rounded-xl">
-              <div className="flex items-start space-x-3">
-                <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <span className="text-orange-600">⚠️</span>
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-base font-semibold text-orange-800 mb-2">
-                    Review Recommended
-                  </h3>
-                  <p className="text-sm text-orange-700 leading-relaxed">
-                    {state.subtasks.filter(task => task.isTooBig).length} subtasks are marked as potentially too large.
-                    Consider going back to the Subtasks step to split them into smaller, more manageable tasks before creating issues.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Actions */}
-          <div className="flex items-center justify-between pt-6 border-t border-gray-200">
-            <button
-              onClick={exportAsMarkdown}
-              className="inline-flex items-center px-6 py-3 text-base font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all shadow-sm"
-            >
-              <span className="mr-2">📥</span>
-              Export as Markdown
-            </button>
-            
-            {createdIssues.length === 0 ? (
-              <button
-                onClick={handleCreateIssues}
-                disabled={
-                  !state.config || 
-                  !state.subtasks.length || 
-                  isCreating
-                }
-                className="inline-flex items-center px-6 py-3 text-base font-semibold text-white bg-gradient-to-r from-emerald-500 to-green-600 border border-transparent rounded-xl hover:from-emerald-600 hover:to-green-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transition-all"
-              >
-                {isCreating ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                    Creating Issues...
-                  </>
-                ) : (
-                  <>
-                    <span className="mr-2">🚀</span>
-                    Create {state.subtasks.length} GitHub Issues
-                  </>
-                )}
-              </button>
-            ) : (
-              <div className="flex items-center space-x-2 text-green-600 font-semibold">
-                <span className="text-lg">🎉</span>
-                <span>All issues created successfully!</span>
-              </div>
-            )}
           </div>
+        )}
+
+        {/* Created Issues */}
+        {createdIssues.length > 0 && (
+          <div className="mb-8 p-6 bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-400 rounded-xl">
+            <div className="flex items-start space-x-3">
+              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <span className="text-green-600">🎉</span>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-green-800 mb-4">
+                  Successfully Created Issues
+                </h3>
+                <div className="space-y-3">
+                  {createdIssues.map((issue) => (
+                    <div key={issue.number} className="flex items-center justify-between p-3 bg-white rounded-lg border border-green-200">
+                      <div className="flex items-center space-x-3">
+                        <span className="inline-flex items-center justify-center w-8 h-8 bg-green-100 text-green-600 rounded-full text-sm font-bold">
+                          #{issue.number}
+                        </span>
+                        <span className="text-base font-medium text-green-800">
+                          {issue.title}
+                        </span>
+                      </div>
+                      <a
+                        href={issue.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center px-3 py-1 text-sm font-medium text-green-700 bg-green-100 rounded-lg hover:bg-green-200 transition-colors"
+                      >
+                        <span className="mr-1">🔗</span>
+                        View Issue
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Warnings */}
+        {state.subtasks.some(task => task.isTooBig) && createdIssues.length === 0 && (
+          <div className="mb-8 p-6 bg-gradient-to-r from-orange-50 to-yellow-50 border-l-4 border-orange-400 rounded-xl">
+            <div className="flex items-start space-x-3">
+              <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <span className="text-orange-600">⚠️</span>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-base font-semibold text-orange-800 mb-2">
+                  Review Recommended
+                </h3>
+                <p className="text-sm text-orange-700 leading-relaxed">
+                  {state.subtasks.filter(task => task.isTooBig).length} subtasks are marked as potentially too large.
+                  Consider going back to the Subtasks step to split them into smaller, more manageable tasks before creating issues.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex items-center justify-between pt-6 border-t border-gray-200">
+          <button
+            onClick={exportAsMarkdown}
+            className="inline-flex items-center px-6 py-3 text-base font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all shadow-sm"
+          >
+            <span className="mr-2">📥</span>
+            Export as Markdown
+          </button>
+
+          {createdIssues.length === 0 ? (
+            <button
+              onClick={handleCreateIssues}
+              disabled={
+                !state.config ||
+                !state.subtasks.length ||
+                isCreating
+              }
+              className="inline-flex items-center px-6 py-3 text-base font-semibold text-white bg-gradient-to-r from-emerald-500 to-green-600 border border-transparent rounded-xl hover:from-emerald-600 hover:to-green-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transition-all"
+            >
+              {isCreating ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                  Creating Issues...
+                </>
+              ) : (
+                <>
+                  <span className="mr-2">🚀</span>
+                  Create {state.subtasks.length} GitHub Issues
+                </>
+              )}
+            </button>
+          ) : (
+            <div className="flex items-center space-x-2 text-green-600 font-semibold">
+              <span className="text-lg">🎉</span>
+              <span>All issues created successfully!</span>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -1,14 +1,23 @@
+import React from 'react';
 import { AppProvider } from './context/AppContext';
-import AppShell from './components/AppShell';
+import { AppShell } from './components/AppShell';
+import { TailwindTest } from './components/TailwindTest';
 import './App.css';
 
 /**
- * Main App component
+ * Main ChopChop application component
+ * Modern, clean interface for GitHub issue decomposition
  */
-function App() {
+function App(): JSX.Element {
   return (
     <AppProvider>
-      <AppShell />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        {/* Temporary test component */}
+        <div data-tailwind-test>
+          <TailwindTest />
+        </div>
+        <AppShell />
+      </div>
     </AppProvider>
   );
 }

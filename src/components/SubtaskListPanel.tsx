@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -57,8 +57,8 @@ function SubtaskCard({ subtask, onUpdate }: { subtask: Subtask; onUpdate: (subta
       ref={setNodeRef}
       style={style}
       className={`bg-white border-2 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-200 ${
-        subtask.isTooBig 
-          ? 'border-l-4 border-l-orange-400 bg-gradient-to-r from-orange-50 to-yellow-50 border-orange-200' 
+        subtask.isTooBig
+          ? 'border-l-4 border-l-orange-400 bg-gradient-to-r from-orange-50 to-yellow-50 border-orange-200'
           : 'border-gray-200 hover:border-gray-300'
       }`}
     >
@@ -122,7 +122,7 @@ function SubtaskCard({ subtask, onUpdate }: { subtask: Subtask; onUpdate: (subta
                   <p className="text-sm text-gray-600 leading-relaxed mb-4">
                     {subtask.description}
                   </p>
-                  
+
                   {subtask.acceptanceCriteria.length > 0 && (
                     <div className="mb-4 p-3 bg-green-50 rounded-lg border border-green-100">
                       <p className="text-xs font-semibold text-green-800 mb-2 flex items-center">
@@ -161,7 +161,7 @@ function SubtaskCard({ subtask, onUpdate }: { subtask: Subtask; onUpdate: (subta
             </>
           )}
         </div>
-        
+
         {!isEditing && (
           <div className="flex items-center space-x-2 ml-4">
             <button
@@ -179,10 +179,11 @@ function SubtaskCard({ subtask, onUpdate }: { subtask: Subtask; onUpdate: (subta
 }
 
 /**
- * Subtask list panel with drag-and-drop functionality
+ * Subtask list panel component
+ * Displays and manages subtasks with drag-and-drop functionality
  */
-export default function SubtaskListPanel() {
-  const { state, dispatch, setStep, setError, setLoading } = useAppContext();
+export const SubtaskListPanel: React.FC = () => {
+  const { state, dispatch, setStep, setError, setLoading, nextStep } = useAppContext();
   const [hasGenerated, setHasGenerated] = useState(false);
 
   const sensors = useSensors(
@@ -208,7 +209,7 @@ export default function SubtaskListPanel() {
     try {
       const openaiClient = new OpenAIClient(state.config.openaiApiKey);
       const subtasks = await openaiClient.generateSubtasks(state.executionPlan);
-      
+
       dispatch({ type: 'SET_SUBTASKS', payload: subtasks });
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to generate subtasks');
@@ -233,12 +234,12 @@ export default function SubtaskListPanel() {
     if (over && active.id !== over.id) {
       const oldIndex = state.subtasks.findIndex(task => task.id === active.id);
       const newIndex = state.subtasks.findIndex(task => task.id === over.id);
-      
+
       const reorderedSubtasks = arrayMove(state.subtasks, oldIndex, newIndex).map((task, index) => ({
         ...task,
         order: index,
       }));
-      
+
       dispatch({ type: 'REORDER_SUBTASKS', payload: reorderedSubtasks });
     }
   };
@@ -258,7 +259,7 @@ export default function SubtaskListPanel() {
       setError('Please generate subtasks before proceeding');
       return;
     }
-    
+
     setError(null);
     setStep(5); // Move to Approval step
   };

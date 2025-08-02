@@ -1,13 +1,14 @@
-import { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import MDEditor from '@uiw/react-md-editor';
 import { useAppContext } from '../context/AppContext';
 import { ExecutionPlan } from '../types';
 import { OpenAIClient } from '../utils/openai';
 
 /**
- * Plan review editor with markdown editing capabilities
+ * Plan review editor component
+ * Allows users to review and edit the generated execution plan
  */
-export default function PlanReviewEditor() {
+export const PlanReviewEditor: React.FC = () => {
   const { state, dispatch, setStep, setError, setLoading } = useAppContext();
   const [planContent, setPlanContent] = useState('');
   const [hasGenerated, setHasGenerated] = useState(false);
@@ -28,7 +29,7 @@ export default function PlanReviewEditor() {
     try {
       const openaiClient = new OpenAIClient(state.config.openaiApiKey);
       const executionPlan = await openaiClient.generateExecutionPlan(state.issue, state.clarificationQuestions);
-      
+
       dispatch({ type: 'SET_EXECUTION_PLAN', payload: executionPlan });
       setPlanContent(executionPlan.content);
     } catch (error) {
@@ -183,7 +184,7 @@ export default function PlanReviewEditor() {
                   Regenerate
                 </button>
               </div>
-              
+
               <div className="border border-gray-300 rounded-xl overflow-hidden shadow-sm">
                 <MDEditor
                   value={planContent}
@@ -193,7 +194,7 @@ export default function PlanReviewEditor() {
                   data-color-mode="light"
                 />
               </div>
-              
+
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-400 rounded-xl p-4">
                 <div className="flex items-start space-x-3">
                   <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">

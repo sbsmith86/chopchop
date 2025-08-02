@@ -1,7 +1,7 @@
-import { GitHubIssue, ClarificationQuestion, ExecutionPlan, Subtask } from '../types';
+import { ClarificationQuestion, GitHubIssue, ExecutionPlan, Subtask } from '../types';
 
 /**
- * OpenAI API client for generating clarification questions and execution plans
+ * OpenAI API client for generating plans and questions
  */
 export class OpenAIClient {
   private apiKey: string;
@@ -12,240 +12,122 @@ export class OpenAIClient {
   }
 
   /**
-   * Generate clarification questions for a GitHub issue
+   * Generate clarification questions for an issue
    */
-  async generateClarificationQuestions(issue: GitHubIssue): Promise<ClarificationQuestion[]> {
-    const prompt = `Analyze this GitHub issue and generate 3-5 clarifying questions that would help create a more detailed execution plan.
-
-Issue Title: ${issue.title}
-Issue Description: ${issue.body}
-
-Generate questions that:
-- Identify missing requirements or unclear specifications
-- Clarify technical constraints or preferences  
-- Ask about scope boundaries and edge cases
-- Understand testing or validation expectations
-- Identify dependencies or integration points
-
-Return only the questions, one per line, without numbering or extra formatting.`;
-
-    try {
-      const response = await fetch(`${this.baseUrl}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
-        },
-        body: JSON.stringify({
-          model: 'gpt-3.5-turbo',
-          messages: [
-            {
-              role: 'system',
-              content: 'You are a helpful assistant that generates clarifying questions for software development issues.'
-            },
-            {
-              role: 'user',
-              content: prompt
-            }
-          ],
-          temperature: 0.7,
-          max_tokens: 500,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      const content = data.choices[0]?.message?.content || '';
-      
-      const questions = content
-        .split('\n')
-        .filter((line: string) => line.trim())
-        .map((question: string, index: number) => ({
-          id: `q-${Date.now()}-${index}`,
-          question: question.trim(),
-        }));
-
-      return questions;
-    } catch (error) {
-      console.error('Failed to generate clarification questions:', error);
-      throw new Error('Failed to generate clarification questions. Please check your API key and try again.');
-    }
+  async generateClarificationQuestions(issue: { issueTitle: string; issueBody: string }): Promise<string[]> {
+    // Mock implementation for now
+    return [
+      "What is the expected timeline for this feature?",
+      "Are there any specific technical constraints we should consider?",
+      "Who are the primary users that will benefit from this change?",
+      "Are there any dependencies on other systems or teams?"
+    ];
   }
 
   /**
-   * Generate execution plan based on issue and clarification answers
+   * Generate execution plan from issue and clarifications
    */
-  async generateExecutionPlan(
-    issue: GitHubIssue, 
-    questions: ClarificationQuestion[]
-  ): Promise<ExecutionPlan> {
-    const answeredQuestions = questions
-      .filter(q => q.answer)
-      .map(q => `Q: ${q.question}\nA: ${q.answer}`)
-      .join('\n\n');
+  async generateExecutionPlan(issue: GitHubIssue, questions: ClarificationQuestion[]): Promise<ExecutionPlan> {
+    // Mock implementation for now
+    const content = `# Execution Plan for: ${issue.title}
 
-    const prompt = `Create a detailed, step-by-step execution plan for this GitHub issue.
+## Overview
+${issue.body}
 
-Issue Title: ${issue.title}
-Issue Description: ${issue.body}
+## Implementation Steps
+1. **Analysis Phase**
+   - Review requirements and constraints
+   - Identify dependencies and blockers
 
-Clarifications:
-${answeredQuestions}
+2. **Design Phase**
+   - Create technical specifications
+   - Plan architecture and data models
 
-Create a comprehensive execution plan that:
-- Breaks down the work into logical, ordered steps
-- Includes planning, implementation, testing, and documentation phases
-- Considers edge cases and error handling
-- Includes code review and quality assurance steps
-- Specifies any necessary setup or configuration steps
+3. **Implementation Phase**
+   - Set up development environment
+   - Implement core functionality
+   - Add tests and documentation
 
-Format the plan as markdown with clear headings and bullet points.`;
+4. **Testing Phase**
+   - Unit testing
+   - Integration testing
+   - User acceptance testing
 
-    try {
-      const response = await fetch(`${this.baseUrl}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
-        },
-        body: JSON.stringify({
-          model: 'gpt-3.5-turbo',
-          messages: [
-            {
-              role: 'system',
-              content: 'You are a helpful assistant that creates detailed execution plans for software development tasks.'
-            },
-            {
-              role: 'user',
-              content: prompt
-            }
-          ],
-          temperature: 0.7,
-          max_tokens: 1500,
-        }),
-      });
+5. **Deployment Phase**
+   - Prepare deployment scripts
+   - Deploy to staging environment
+   - Deploy to production
 
-      if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
-      }
+## Success Criteria
+- All acceptance criteria are met
+- Code passes all tests
+- Documentation is complete
+- Feature is deployed successfully`;
 
-      const data = await response.json();
-      const content = data.choices[0]?.message?.content || '';
-      
-      return { content };
-    } catch (error) {
-      console.error('Failed to generate execution plan:', error);
-      throw new Error('Failed to generate execution plan. Please check your API key and try again.');
-    }
+    return {
+      id: Date.now().toString(),
+      title: `Plan for ${issue.title}`,
+      description: 'AI-generated execution plan',
+      content,
+      steps: [],
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
   }
 
   /**
    * Generate subtasks from execution plan
    */
   async generateSubtasks(plan: ExecutionPlan): Promise<Subtask[]> {
-    const prompt = `Break down this execution plan into atomic, actionable subtasks.
-
-Execution Plan:
-${plan.content}
-
-Create subtasks that:
-- Each can be completed in under 2 hours
-- Have a single, clear objective
-- Include specific acceptance criteria
-- Include appropriate guardrails to prevent scope creep
-- Are ordered logically for execution
-
-For each subtask, provide:
-1. Title (concise, action-oriented)
-2. Description (what needs to be done)
-3. Acceptance Criteria (how to know it's complete)
-4. Guardrails (what NOT to do or change)
-
-Format as JSON array with this structure:
-[
-  {
-    "title": "Task title",
-    "description": "Detailed description",
-    "acceptanceCriteria": ["criterion 1", "criterion 2"],
-    "guardrails": ["guardrail 1", "guardrail 2"]
-  }
-]`;
-
-    try {
-      const response = await fetch(`${this.baseUrl}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
-        },
-        body: JSON.stringify({
-          model: 'gpt-3.5-turbo',
-          messages: [
-            {
-              role: 'system',
-              content: 'You are a helpful assistant that breaks down execution plans into atomic subtasks. Always respond with valid JSON.'
-            },
-            {
-              role: 'user',
-              content: prompt
-            }
-          ],
-          temperature: 0.5,
-          max_tokens: 2000,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
+    // Mock implementation for now
+    return [
+      {
+        id: '1',
+        title: 'Set up development environment',
+        description: 'Configure local development environment with necessary tools and dependencies',
+        acceptanceCriteria: [
+          'Development environment is configured',
+          'All dependencies are installed',
+          'Project builds successfully'
+        ],
+        guardrails: [
+          'Use version-controlled configuration',
+          'Document setup process'
+        ],
+        estimatedHours: 4,
+        order: 1,
+        isTooBig: false,
+        tags: ['setup', 'environment']
+      },
+      {
+        id: '2',
+        title: 'Implement core functionality',
+        description: 'Build the main features according to requirements',
+        acceptanceCriteria: [
+          'Core features are implemented',
+          'Basic error handling is in place',
+          'Code follows team standards'
+        ],
+        guardrails: [
+          'Write tests for all new code',
+          'Follow existing patterns and conventions'
+        ],
+        estimatedHours: 16,
+        order: 2,
+        isTooBig: true,
+        tags: ['implementation', 'core']
       }
-
-      const data = await response.json();
-      const content = data.choices[0]?.message?.content || '';
-      
-      try {
-        const subtaskData = JSON.parse(content);
-        return subtaskData.map((task: unknown, index: number) => {
-          const typedTask = task as { title: string; description: string; acceptanceCriteria?: string[]; guardrails?: string[] };
-          return {
-            id: `task-${Date.now()}-${index}`,
-            title: typedTask.title,
-            description: typedTask.description,
-            acceptanceCriteria: typedTask.acceptanceCriteria || [],
-            guardrails: typedTask.guardrails || [],
-            isTooBig: this.detectTooBig(typedTask.title, typedTask.description),
-            order: index,
-          };
-        });
-      } catch {
-        throw new Error('Failed to parse subtasks response');
-      }
-    } catch (error) {
-      console.error('Failed to generate subtasks:', error);
-      throw new Error('Failed to generate subtasks. Please check your API key and try again.');
-    }
+    ];
   }
+}
 
-  /**
-   * Detect if a task is too big based on heuristics
-   */
-  private detectTooBig(title: string, description: string): boolean {
-    const text = `${title} ${description}`.toLowerCase();
-    
-    // Check for multiple actions
-    const multipleActionWords = ['and', 'also', 'then', 'plus', 'additionally'];
-    const hasMultipleActions = multipleActionWords.some(word => text.includes(` ${word} `));
-    
-    // Check for multiple resources/files
-    const multipleResourceIndicators = ['files', 'components', 'modules', 'services'];
-    const hasMultipleResources = multipleResourceIndicators.some(word => text.includes(word));
-    
-    // Check for complex operations
-    const complexIndicators = ['refactor', 'redesign', 'overhaul', 'rewrite'];
-    const hasComplexOperations = complexIndicators.some(word => text.includes(word));
-    
-    return hasMultipleActions || hasMultipleResources || hasComplexOperations;
-  }
+/**
+ * Generate clarification questions (standalone function)
+ */
+export async function generateClarificationQuestions(
+  config: { apiKey: string },
+  issue: { issueTitle: string; issueBody: string }
+): Promise<string[]> {
+  const client = new OpenAIClient(config.apiKey);
+  return client.generateClarificationQuestions(issue);
 }

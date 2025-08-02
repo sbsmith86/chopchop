@@ -15,56 +15,60 @@ export class GitHubClient {
    * Fetch a GitHub issue by URL or owner/repo/number
    */
   async fetchIssue(urlOrPath: string): Promise<GitHubIssue> {
-    let owner: string, repo: string, issueNumber: number;
-
-    // Parse GitHub URL
-    const urlMatch = urlOrPath.match(/github\.com\/([^/]+)\/([^/]+)\/issues\/(\d+)/);
-    if (urlMatch) {
-      [, owner, repo] = urlMatch;
-      issueNumber = parseInt(urlMatch[3], 10);
-    } else {
-      // Parse path format: owner/repo/issues/123
-      const pathMatch = urlOrPath.match(/^([^/]+)\/([^/]+)\/issues\/(\d+)$/);
-      if (pathMatch) {
-        [, owner, repo] = pathMatch;
-        issueNumber = parseInt(pathMatch[3], 10);
-      } else {
-        throw new Error('Invalid GitHub issue URL or path format');
-      }
-    }
-
     try {
-      const response = await fetch(`${this.baseUrl}/repos/${owner}/${repo}/issues/${issueNumber}`, {
-        headers: {
-          'Authorization': `Bearer ${this.pat}`,
-          'Accept': 'application/vnd.github.v3+json',
-          'User-Agent': 'ChopChop-Issue-Decomposer',
-        },
+      // Parse the URL to extract owner, repo, and issue number
+      const parsed = parseGitHubIssueUrl(urlOrPath);
+      if (!parsed) {
+        throw new Error('Invalid GitHub issue URL format. Expected: https://github.com/owner/repo/issues/123');
+      }
+
+      const { owner, repo, issueNumber } = parsed;
+      const url = `${this.baseUrl}/repos/${owner}/${repo}/issues/${issueNumber}`;
+
+      const response = await fetch(url, {
+        headers:
+          {
+            'Authorization': `token ${this.pat}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'User-Agent': 'ChopChop-Issue-Decomposer',
+          },
       });
 
       if (!response.ok) {
         if (response.status === 404) {
-          throw new Error('Issue not found. Please check the URL and your access permissions.');
+          throw new Error(`Issue not found. This could be because:
+• The repository is private and your PAT lacks 'repo' permissions
+• The issue number doesn't exist
+• The repository URL is incorrect
+• Your PAT has expired or is invalid`);
         } else if (response.status === 401) {
-          throw new Error('Authentication failed. Please check your GitHub Personal Access Token.');
-        } else {
-          throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
+          throw new Error('Invalid or expired GitHub Personal Access Token');
+        } else if (response.status === 403) {
+          throw new Error('GitHub API rate limit exceeded or insufficient permissions');
         }
+        throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
       }
 
-      const issueData = await response.json();
-      
+      const data = await response.json();
+
+      // Validate the response has required fields
+      if (!data || typeof data.id === 'undefined' || !data.title) {
+        throw new Error('Invalid response from GitHub API - missing required fields');
+      }
+
+      // Convert to our internal format
       return {
-        title: issueData.title,
-        body: issueData.body || '',
-        url: issueData.html_url,
+        id: data.id.toString(),
+        title: data.title,
+        body: data.body || '',
+        url: data.html_url,
+        number: data.number,
+        repository: `${owner}/${repo}`
       };
+
     } catch (error) {
       console.error('Failed to fetch GitHub issue:', error);
-      if (error instanceof Error) {
-        throw error;
-      }
-      throw new Error('Failed to fetch GitHub issue');
+      throw error;
     }
   }
 
@@ -109,7 +113,7 @@ export class GitHubClient {
       }
 
       const createdIssue = await response.json();
-      
+
       return {
         number: createdIssue.number,
         url: createdIssue.html_url,
@@ -135,12 +139,12 @@ export class GitHubClient {
     parentIssueUrl?: string
   ): Promise<CreatedIssue[]> {
     const createdIssues: CreatedIssue[] = [];
-    
+
     for (const [index, subtask] of subtasks.entries()) {
       try {
         const body = this.formatSubtaskBody(subtask, index + 1, parentIssueTitle, parentIssueUrl);
         const labels = ['subtask', 'chopchop-generated'];
-        
+
         if (subtask.isTooBig) {
           labels.push('needs-splitting');
         }
@@ -154,7 +158,7 @@ export class GitHubClient {
         );
 
         createdIssues.push(createdIssue);
-        
+
         // Add a small delay to avoid rate limiting
         await new Promise(resolve => setTimeout(resolve, 500));
       } catch (error) {
@@ -175,7 +179,7 @@ export class GitHubClient {
     parentTitle: string,
     parentUrl?: string
   ): string {
-    const parentSection = parentUrl 
+    const parentSection = parentUrl
       ? `**Parent Issue:** [${parentTitle}](${parentUrl})`
       : `**Parent Issue:** ${parentTitle}`;
 
@@ -222,15 +226,110 @@ ${subtask.isTooBig ? '\n⚠️ **Warning:** This task may be too large and shoul
     try {
       const response = await fetch(`${this.baseUrl}/repos/${owner}/${repo}`, {
         headers: {
-          'Authorization': `Bearer ${this.pat}`,
+          'Authorization': `token ${this.pat}`,
           'Accept': 'application/vnd.github.v3+json',
           'User-Agent': 'ChopChop-Issue-Decomposer',
         },
       });
-
       return response.ok;
-    } catch {
+    } catch (error) {
+      console.error('Failed to validate repository:', error);
       return false;
     }
+  }
+}
+
+/**
+ * Parse GitHub issue URL to extract components
+ */
+export function parseGitHubIssueUrl(url: string): {
+  owner: string;
+  repo: string;
+  issueNumber: string;
+} | null {
+  if (!url || typeof url !== 'string') {
+    return null;
+  }
+
+  // Handle different URL formats
+  const patterns = [
+    /github\.com\/([^\/]+)\/([^\/]+)\/issues\/(\d+)/,
+    /api\.github\.com\/repos\/([^\/]+)\/([^\/]+)\/issues\/(\d+)/
+  ];
+
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) {
+      const [, owner, repo, issueNumber] = match;
+      return { owner, repo, issueNumber };
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Standalone function for fetching GitHub issues
+ */
+export async function fetchGitHubIssue(
+  config: { pat: string; repo: string },
+  issueUrl: string
+): Promise<GitHubIssue> {
+  if (!config.pat) {
+    throw new Error('GitHub Personal Access Token is required');
+  }
+
+  if (!issueUrl) {
+    throw new Error('Issue URL is required');
+  }
+
+  const client = new GitHubClient(config.pat);
+  return client.fetchIssue(issueUrl);
+}
+
+/**
+ * Validate GitHub repository access
+ */
+export async function validateGitHubAccess(config: { pat: string; repo: string }): Promise<{
+  isValid: boolean;
+  canReadRepo: boolean;
+  canCreateIssues: boolean;
+  error?: string;
+}> {
+  if (!config.pat || !config.repo) {
+    return {
+      isValid: false,
+      canReadRepo: false,
+      canCreateIssues: false,
+      error: 'GitHub PAT and repository are required',
+    };
+  }
+
+  const [owner, repo] = config.repo.split('/');
+  if (!owner || !repo) {
+    return {
+      isValid: false,
+      canReadRepo: false,
+      canCreateIssues: false,
+      error: 'Invalid repository format. Use: owner/repository',
+    };
+  }
+
+  try {
+    const client = new GitHubClient(config.pat);
+    const canRead = await client.validateRepository(owner, repo);
+
+    return {
+      isValid: canRead,
+      canReadRepo: canRead,
+      canCreateIssues: canRead, // Simplified for now
+    };
+  } catch (error) {
+    return {
+      isValid: false,
+      canReadRepo: false,
+      canCreateIssues: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
   }
 }

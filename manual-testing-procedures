@@ -1,0 +1,23 @@
+# Manual Testing Procedures
+
+## Configuration Testing
+1. Open ChopChop application
+2. Verify configuration panel appears first
+3. Enter valid GitHub PAT and repository
+4. Test validation buttons
+5. Enter OpenAI API key
+6. Save configuration
+7. Verify settings persist on page reload
+
+## Issue Processing Testing
+1. Navigate to Issue Input step
+2. Test GitHub URL input with valid issue
+3. Test markdown content input
+4. Verify error handling for invalid inputs
+5. Confirm navigation to next step
+
+## Workflow Testing
+1. Complete full workflow from input to approval
+2. Verify data persistence between steps
+3. Test navigation controls
+4. Confirm issue creation functionality

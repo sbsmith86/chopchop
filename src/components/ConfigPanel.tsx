@@ -1,640 +1,246 @@
-import { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { Config } from '../types';
-import { loadConfig, saveConfig, exportConfig, importConfig } from '../utils/storage';
-import { GitHubClient } from '../utils/github';
+import { EyeIcon, EyeSlashIcon, DownloadIcon, UploadIcon, XIcon } from './ui/Icons';
+
+interface ConfigPanelProps {
+  onClose?: () => void;
+}
 
 /**
- * Configuration panel for GitHub PAT, repo, and OpenAI API key
+ * Modern configuration panel with clean form design
+ * Features secure token input and configuration management
  */
-export default function ConfigPanel() {
-  const { setConfig, setStep, setError } = useAppContext();
-  const [formData, setFormData] = useState<Config>({
-    githubPat: '',
-    githubRepo: '',
-    openaiApiKey: '',
-  });
-  const [originalConfig, setOriginalConfig] = useState<Config | null>(null);
-  const [showTokens, setShowTokens] = useState({
-    githubPat: false,
-    openaiApiKey: false,
-  });
-  const [validationStatus, setValidationStatus] = useState({
-    tokenValid: null as boolean | null,
-    repoReadable: null as boolean | null,
-    repoWritable: null as boolean | null,
-    isValidating: false,
-  });
-
-  // Load config on mount
-  useEffect(() => {
-    const savedConfig = loadConfig();
-    if (savedConfig) {
-      setFormData(savedConfig);
-      setOriginalConfig(savedConfig);
-      setConfig(savedConfig);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Intentionally omit setConfig to prevent infinite loop
+export const ConfigPanel: React.FC<ConfigPanelProps> = ({ onClose }) => {
+  const { state, updateConfig, exportConfig, importConfig } = useAppContext();
+  const [showTokens, setShowTokens] = useState(false);
+  const [localConfig, setLocalConfig] = useState(state.config);
+  const [isSaving, setIsSaving] = useState(false);
 
   /**
-   * Handle form input changes
+   * Handles saving configuration with user feedback
    */
-  const handleInputChange = (field: keyof Config, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    
-    // Reset validation status when GitHub-related fields change
-    if (field === 'githubPat' || field === 'githubRepo') {
-      setValidationStatus({
-        tokenValid: null,
-        repoReadable: null,
-        repoWritable: null,
-        isValidating: false,
-      });
-    }
-  };
-
-  /**
-   * Check if current form data differs from original saved configuration
-   */
-  const hasConfigChanged = (): boolean => {
-    if (!originalConfig) return false;
-    return (
-      formData.githubPat !== originalConfig.githubPat ||
-      formData.githubRepo !== originalConfig.githubRepo ||
-      formData.openaiApiKey !== originalConfig.openaiApiKey
-    );
-  };
-
-  /**
-   * Check if there's an existing configuration that would be overwritten
-   */
-  const hasExistingConfig = (): boolean => {
-    return originalConfig !== null && (
-      originalConfig.githubPat !== '' ||
-      originalConfig.githubRepo !== '' ||
-      originalConfig.openaiApiKey !== ''
-    );
-  };
-
-  /**
-   * Save configuration and proceed to next step
-   */
-  const handleSave = () => {
-    if (!formData.githubPat || !formData.githubRepo || !formData.openaiApiKey) {
-      setError('All configuration fields are required');
-      return;
-    }
-
-    // Check if we're updating existing configuration and if values have changed
-    if (hasExistingConfig() && hasConfigChanged()) {
-      const confirmMessage = `You are about to update your existing configuration. This will overwrite:
-
-${originalConfig?.githubRepo !== formData.githubRepo ? `• GitHub Repository: "${originalConfig?.githubRepo}" → "${formData.githubRepo}"` : ''}
-${originalConfig?.githubPat !== formData.githubPat ? `• GitHub Personal Access Token` : ''}
-${originalConfig?.openaiApiKey !== formData.openaiApiKey ? `• OpenAI API Key` : ''}
-
-Are you sure you want to save these changes?`;
-
-      if (!window.confirm(confirmMessage)) {
-        return; // User cancelled, don't save
-      }
-    }
-
+  const handleSave = async (): Promise<void> => {
+    setIsSaving(true);
     try {
-      saveConfig(formData);
-      setConfig(formData);
-      setOriginalConfig(formData); // Update original config to current values
-      setError(null);
-      setStep(1); // Move to Issue Input step
-    } catch {
-      setError('Failed to save configuration');
+      updateConfig(localConfig);
+      await new Promise(resolve => setTimeout(resolve, 500)); // Brief feedback delay
+      onClose?.();
+    } finally {
+      setIsSaving(false);
     }
   };
 
   /**
-   * Export configuration to JSON file
+   * Handles configuration file import with error handling
+   * @param event - File input change event
    */
-  const handleExport = () => {
-    try {
-      exportConfig(formData);
-    } catch {
-      setError('Failed to export configuration');
-    }
-  };
-
-  /**
-   * Import configuration from JSON file
-   */
-  const handleImport = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        try {
-          const config = await importConfig(file);
-          setFormData(config);
-          setError(null);
-          // Reset validation status when importing new config
-          setValidationStatus({
-            tokenValid: null,
-            repoReadable: null,
-            repoWritable: null,
-            isValidating: false,
-          });
-        } catch {
-          setError('Failed to import configuration. Please check the file format.');
-        }
-      }
-    };
-    input.click();
-  };
-
-  /**
-   * Parse repository owner and name from repo string
-   */
-  const parseRepo = (repo: string): { owner: string; name: string } | null => {
-    const match = repo.match(/^([^/]+)\/([^/]+)$/);
-    if (!match) return null;
-    return { owner: match[1], name: match[2] };
-  };
-
-  /**
-   * Validate GitHub token
-   */
-  const validateGitHubToken = async () => {
-    if (!formData.githubPat) {
-      setError('GitHub Personal Access Token is required');
-      return;
-    }
-
-    setValidationStatus(prev => ({ ...prev, isValidating: true }));
-    setError(null);
-
-    try {
-      const client = new GitHubClient(formData.githubPat);
-      const isValid = await client.validateToken();
-      
-      setValidationStatus(prev => ({ 
-        ...prev, 
-        tokenValid: isValid,
-        isValidating: false 
-      }));
-
-      if (!isValid) {
-        setError('Invalid GitHub token. Please check your Personal Access Token.');
-      }
-    } catch {
-      setValidationStatus(prev => ({ 
-        ...prev, 
-        tokenValid: false,
-        isValidating: false 
-      }));
-      setError('Failed to validate GitHub token. Check your internet connection.');
-    }
-  };
-
-  /**
-   * Validate repository read access
-   */
-  const validateRepoRead = async () => {
-    if (!formData.githubPat || !formData.githubRepo) {
-      setError('GitHub PAT and repository are required');
-      return;
-    }
-
-    const repo = parseRepo(formData.githubRepo);
-    if (!repo) {
-      setError('Invalid repository format. Use: owner/repository');
-      return;
-    }
-
-    setValidationStatus(prev => ({ ...prev, isValidating: true }));
-    setError(null);
-
-    try {
-      const client = new GitHubClient(formData.githubPat);
-      const canRead = await client.validateRepository(repo.owner, repo.name);
-      
-      setValidationStatus(prev => ({ 
-        ...prev, 
-        repoReadable: canRead,
-        isValidating: false 
-      }));
-
-      if (!canRead) {
-        setError('Cannot read repository. Check if the repository exists and your token has access.');
-      }
-    } catch {
-      setValidationStatus(prev => ({ 
-        ...prev, 
-        repoReadable: false,
-        isValidating: false 
-      }));
-      setError('Failed to validate repository access. Check your internet connection.');
-    }
-  };
-
-  /**
-   * Validate repository write access by creating a test issue (and immediately closing it)
-   */
-  const validateRepoWrite = async () => {
-    if (!formData.githubPat || !formData.githubRepo) {
-      setError('GitHub PAT and repository are required');
-      return;
-    }
-
-    const repo = parseRepo(formData.githubRepo);
-    if (!repo) {
-      setError('Invalid repository format. Use: owner/repository');
-      return;
-    }
-
-    setValidationStatus(prev => ({ ...prev, isValidating: true }));
-    setError(null);
-
-    try {
-      const client = new GitHubClient(formData.githubPat);
-      
-      // Create a test issue
-      const testIssue = await client.createIssue(
-        repo.owner,
-        repo.name,
-        '[ChopChop Test] Connection Test - Please Ignore',
-        'This is a test issue created by ChopChop to verify write access. It will be closed automatically.\n\n*This issue can be safely deleted.*',
-        ['chopchop-test']
-      );
-
-      // Try to close the test issue immediately
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
+    const file = event.target.files?.[0];
+    if (file) {
       try {
-        await fetch(`https://api.github.com/repos/${repo.owner}/${repo.name}/issues/${testIssue.number}`, {
-          method: 'PATCH',
-          headers: {
-            'Authorization': `Bearer ${formData.githubPat}`,
-            'Accept': 'application/vnd.github.v3+json',
-            'Content-Type': 'application/json',
-            'User-Agent': 'ChopChop-Issue-Decomposer',
-          },
-          body: JSON.stringify({ state: 'closed' }),
-        });
-      } catch {
-        // Ignore errors when closing, the main test was successful
-      }
-      
-      setValidationStatus(prev => ({ 
-        ...prev, 
-        repoWritable: true,
-        isValidating: false 
-      }));
-
-    } catch (error) {
-      setValidationStatus(prev => ({ 
-        ...prev, 
-        repoWritable: false,
-        isValidating: false 
-      }));
-      
-      if (error instanceof Error) {
-        if (error.message.includes('Permission denied')) {
-          setError('Cannot create issues in this repository. Your token needs "repo" scope for private repos or "public_repo" for public repos.');
-        } else if (error.message.includes('Repository not found')) {
-          setError('Repository not found. Check the repository path and your access permissions.');
-        } else {
-          setError(`Write access test failed: ${error.message}`);
-        }
-      } else {
-        setError('Failed to test write access. Check your internet connection.');
+        await importConfig(file);
+        setLocalConfig(state.config);
+        event.target.value = '';
+      } catch (error) {
+        alert('Failed to import configuration file');
       }
     }
   };
 
   /**
-   * Run all validations
+   * Updates a specific field in local configuration
+   * @param field - Configuration field to update
+   * @param value - New value for the field
    */
-  const validateAllGitHub = async () => {
-    if (!formData.githubPat || !formData.githubRepo) {
-      setError('GitHub PAT and repository are required');
-      return;
-    }
+  const updateField = <K extends keyof typeof localConfig>(
+    field: K,
+    value: typeof localConfig[K]
+  ): void => {
+    setLocalConfig(prev => ({ ...prev, [field]: value }));
+  };
 
-    // Reset validation status
-    setValidationStatus({
-      tokenValid: null,
-      repoReadable: null,
-      repoWritable: null,
-      isValidating: true,
-    });
-
-    // Run validations sequentially
-    await validateGitHubToken();
-    await validateRepoRead();
-    await validateRepoWrite();
+  /**
+   * Updates nested preference fields
+   * @param preferences - Updated preferences object
+   */
+  const updatePreferences = (preferences: typeof localConfig.preferences): void => {
+    setLocalConfig(prev => ({ ...prev, preferences }));
   };
 
   return (
-    <div className="h-full">
-      <div className="h-full flex flex-col">
-        {/* Header */}
-        <div className="px-6 py-6 border-b border-gray-100 flex-shrink-0">
-          <div className="flex items-start space-x-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white text-xl shadow-lg">
-              ⚙️
-            </div>
-            <div className="flex-1">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                Configuration & Setup
-              </h2>
-              <p className="text-gray-600 leading-relaxed">
-                Connect your GitHub repository and API keys to get started with intelligent issue decomposition.
-              </p>
-            </div>
-          </div>
+    <div className="relative p-8">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Configuration</h2>
+          <p className="text-gray-500 mt-1">Set up your GitHub and OpenAI credentials</p>
         </div>
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <XIcon className="w-5 h-5 text-gray-500" />
+          </button>
+        )}
+      </div>
 
-        {/* Private Repository Guide */}
-        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-100 px-6 py-4 flex-shrink-0">
-          <div className="flex items-start space-x-3">
-            <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
-              <span className="text-amber-600">💡</span>
+      <div className="max-w-2xl space-y-8">
+        {/* GitHub Configuration */}
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+              <span className="text-white font-semibold text-sm">GH</span>
             </div>
-            <div className="flex-1">
-              <h3 className="text-sm font-semibold text-amber-800 mb-1">
-                Private Repository Access
-              </h3>
-              <p className="text-sm text-amber-700 leading-relaxed">
-                For private repositories, ensure your GitHub Personal Access Token has <strong>repo</strong> and <strong>read:org</strong> permissions.{' '}
-                <a 
-                  href="https://github.com/settings/tokens/new?scopes=repo,read:org&description=ChopChop%20Issue%20Decomposer" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="font-semibold underline hover:no-underline transition-all"
+            <h3 className="text-lg font-semibold text-gray-900">GitHub Settings</h3>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Personal Access Token
+              </label>
+              <div className="relative">
+                <input
+                  type={showTokens ? 'text' : 'password'}
+                  value={localConfig.githubPat || ''}
+                  onChange={e => updateField('githubPat', e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-mono text-sm"
+                  placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowTokens(!showTokens)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded transition-colors"
                 >
-                  Create token →
-                </a>
-              </p>
+                  {showTokens ? (
+                    <EyeSlashIcon className="w-4 h-4 text-gray-500" />
+                  ) : (
+                    <EyeIcon className="w-4 h-4 text-gray-500" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Default Repository
+              </label>
+              <input
+                type="text"
+                value={localConfig.defaultRepo || ''}
+                onChange={e => updateField('defaultRepo', e.target.value)}
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                placeholder="owner/repository"
+              />
             </div>
           </div>
         </div>
 
-        {/* Scrollable Content */}
-        <div className="flex-1 overflow-auto">
-          {/* Configuration Form */}
-          <div className="px-6 py-6">
-            <div className="space-y-6">
-              {/* GitHub Repository */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">
-                  GitHub Repository
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <span className="text-gray-400 text-sm font-medium">github.com/</span>
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="owner/repository"
-                    value={formData.githubRepo}
-                    onChange={(e) => handleInputChange('githubRepo', e.target.value)}
-                    className="w-full pl-28 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-base transition-all hover:border-gray-400"
-                  />
-                </div>
-                <p className="mt-2 text-xs text-gray-500">
-                  Include the owner/organization name and repository name
-                </p>
-              </div>
-
-              {/* GitHub PAT */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">
-                  GitHub Personal Access Token
-                </label>
-                <div className="relative">
-                  <input
-                    type={showTokens.githubPat ? 'text' : 'password'}
-                    placeholder="Enter your GitHub PAT"
-                    value={formData.githubPat}
-                    onChange={(e) => handleInputChange('githubPat', e.target.value)}
-                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-base transition-all hover:border-gray-400"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowTokens(prev => ({ ...prev, githubPat: !prev.githubPat }))}
-                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
-                  >
-                    <span className="text-lg">{showTokens.githubPat ? '🙈' : '👁️'}</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* OpenAI API Key */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">
-                  OpenAI API Key
-                </label>
-                <div className="relative">
-                  <input
-                    type={showTokens.openaiApiKey ? 'text' : 'password'}
-                    placeholder="Enter your OpenAI API key"
-                    value={formData.openaiApiKey}
-                    onChange={(e) => handleInputChange('openaiApiKey', e.target.value)}
-                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-base transition-all hover:border-gray-400"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowTokens(prev => ({ ...prev, openaiApiKey: !prev.openaiApiKey }))}
-                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
-                  >
-                    <span className="text-lg">{showTokens.openaiApiKey ? '🙈' : '👁️'}</span>
-                  </button>
-                </div>
-              </div>
+        {/* OpenAI Configuration */}
+        <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6 border border-green-100">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
+              <span className="text-white font-semibold text-sm">AI</span>
             </div>
+            <h3 className="text-lg font-semibold text-gray-900">OpenAI Settings</h3>
           </div>
 
-          {/* GitHub Validation Section */}
-          <div className="border-t border-gray-100 px-6 py-6">
-            <div className="mb-6">
-              <div className="flex items-start space-x-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center text-white text-xl shadow-lg">
-                  🔍
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                    GitHub Connection Test
-                  </h3>
-                  <p className="text-gray-600">
-                    Verify that your GitHub setup is working correctly
-                  </p>
-                </div>
-              </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              API Key
+            </label>
+            <input
+              type={showTokens ? 'text' : 'password'}
+              value={localConfig.openaiApiKey || ''}
+              onChange={e => updateField('openaiApiKey', e.target.value)}
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all font-mono text-sm"
+              placeholder="sk-xxxxxxxxxxxxxxxxxxxx"
+            />
+          </div>
+        </div>
+
+        {/* Preferences */}
+        <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Preferences</h3>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Theme
+              </label>
+              <select
+                value={localConfig.preferences.theme}
+                onChange={e => updatePreferences({
+                  ...localConfig.preferences,
+                  theme: e.target.value as 'light' | 'dark' | 'system'
+                })}
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              >
+                <option value="system">System</option>
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+              </select>
             </div>
 
-            {/* Validation Status Indicators */}
-            <div className="space-y-4 mb-6">
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
-                    <span className="text-indigo-600">🔐</span>
-                  </div>
-                  <span className="text-sm font-semibold text-gray-700">Token Authentication</span>
-                </div>
-                <div className="flex items-center">
-                  {validationStatus.tokenValid === true && (
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      ✅ Valid
-                    </span>
-                  )}
-                  {validationStatus.tokenValid === false && (
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                      ❌ Invalid
-                    </span>
-                  )}
-                  {validationStatus.tokenValid === null && (
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-                      ⏳ Not tested
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <span className="text-blue-600">👁️</span>
-                  </div>
-                  <span className="text-sm font-semibold text-gray-700">Read Issues</span>
-                </div>
-                <div className="flex items-center">
-                  {validationStatus.repoReadable === true && (
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      ✅ Can read
-                    </span>
-                  )}
-                  {validationStatus.repoReadable === false && (
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                      ❌ Cannot read
-                    </span>
-                  )}
-                  {validationStatus.repoReadable === null && (
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-                      ⏳ Not tested
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
-                    <span className="text-orange-600">✏️</span>
-                  </div>
-                  <span className="text-sm font-semibold text-gray-700">Create Issues</span>
-                </div>
-                <div className="flex items-center">
-                  {validationStatus.repoWritable === true && (
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      ✅ Can create
-                    </span>
-                  )}
-                  {validationStatus.repoWritable === false && (
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                      ❌ Cannot create
-                    </span>
-                  )}
-                  {validationStatus.repoWritable === null && (
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-                      ⏳ Not tested
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Validation Buttons */}
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-              <button
-                onClick={validateGitHubToken}
-                disabled={validationStatus.isValidating || !formData.githubPat}
-                className="inline-flex items-center justify-center px-4 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Editor Mode
+              </label>
+              <select
+                value={localConfig.preferences.editorMode}
+                onChange={e => updatePreferences({
+                  ...localConfig.preferences,
+                  editorMode: e.target.value as 'markdown' | 'rich'
+                })}
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               >
-                {validationStatus.isValidating ? '⏳' : '🔐'} Test Token
-              </button>
-              
-              <button
-                onClick={validateRepoRead}
-                disabled={validationStatus.isValidating || !formData.githubPat || !formData.githubRepo}
-                className="inline-flex items-center justify-center px-4 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
-              >
-                {validationStatus.isValidating ? '⏳' : '👁️'} Test Read
-              </button>
-              
-              <button
-                onClick={validateRepoWrite}
-                disabled={validationStatus.isValidating || !formData.githubPat || !formData.githubRepo}
-                className="inline-flex items-center justify-center px-4 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
-              >
-                {validationStatus.isValidating ? '⏳' : '✏️'} Test Write
-              </button>
-              
-              <button
-                onClick={validateAllGitHub}
-                disabled={validationStatus.isValidating || !formData.githubPat || !formData.githubRepo}
-                className="inline-flex items-center justify-center px-4 py-3 text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-purple-600 border border-transparent rounded-xl hover:from-indigo-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg"
-              >
-                {validationStatus.isValidating ? '⏳ Testing...' : '🔍 Test All'}
-              </button>
-            </div>
-
-            {/* Helper Text */}
-            <div className="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
-              <div className="text-xs text-blue-700 space-y-1">
-                <p>• <strong>Token test</strong> verifies your GitHub Personal Access Token is valid</p>
-                <p>• <strong>Read test</strong> checks if you can access the repository and read issues</p>
-                <p>• <strong>Write test</strong> creates a temporary test issue (then closes it) to verify create permissions</p>
-              </div>
+                <option value="markdown">Markdown</option>
+                <option value="rich">Rich Text</option>
+              </select>
             </div>
           </div>
         </div>
 
-        {/* Actions Footer */}
-        <div className="bg-gray-50 border-t border-gray-100 px-6 py-6 flex-shrink-0">
-          <div className="flex items-center justify-between">
-            <div className="flex space-x-3">
-              <button
-                onClick={handleExport}
-                className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all shadow-sm"
-              >
-                Download Config
-              </button>
-              <button
-                onClick={handleImport}
-                className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all shadow-sm"
-              >
-                Upload Config
-              </button>
-            </div>
-            <div className="flex items-center space-x-4">
-              {hasExistingConfig() && hasConfigChanged() && (
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                  ⚠️ Unsaved changes
-                </span>
-              )}
-              <button
-                onClick={handleSave}
-                className={`inline-flex items-center px-6 py-3 text-sm font-semibold rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all shadow-lg ${
-                  hasExistingConfig() && hasConfigChanged()
-                    ? 'text-white bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 focus:ring-orange-500'
-                    : 'text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 focus:ring-indigo-500'
-                }`}
-              >
-                {hasExistingConfig() && hasConfigChanged() ? 'Update Configuration' : 'Save & Continue'}
-              </button>
-            </div>
+        {/* Actions */}
+        <div className="flex items-center justify-between pt-6 border-t border-gray-200">
+          <div className="flex items-center space-x-4">
+            <label className="cursor-pointer inline-flex items-center space-x-2 px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-all border border-blue-200 hover:border-blue-300">
+              <UploadIcon className="w-4 h-4" />
+              <span>Import Config</span>
+              <input
+                type="file"
+                accept=".json"
+                onChange={handleImport}
+                className="hidden"
+              />
+            </label>
+
+            <button
+              onClick={exportConfig}
+              className="inline-flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-700 hover:bg-gray-50 rounded-lg transition-all border border-gray-200 hover:border-gray-300"
+            >
+              <DownloadIcon className="w-4 h-4" />
+              <span>Export Config</span>
+            </button>
           </div>
+
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSaving ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                Saving...
+              </>
+            ) : (
+              'Save Configuration'
+            )}
+          </button>
         </div>
       </div>
     </div>
   );
-}
+};
