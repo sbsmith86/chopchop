@@ -72,12 +72,14 @@ export default function PlanReviewEditor() {
 
   if (state.isLoading) {
     return (
-      <div className="max-w-6xl mx-auto">
-        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="px-8 py-12 text-center">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-orange-200 border-t-orange-600 mx-auto mb-6"></div>
-            <p className="text-gray-600 dark:text-gray-400 text-lg">Generating execution plan...</p>
-            <p className="text-gray-500 dark:text-gray-500 text-sm mt-2">This may take a few moments</p>
+      <div className="h-full">
+        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl border border-gray-200 dark:border-gray-700 h-full flex flex-col">
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-16 w-16 border-4 border-orange-200 border-t-orange-600 mx-auto mb-6"></div>
+              <p className="text-gray-600 dark:text-gray-400 text-lg">Generating execution plan...</p>
+              <p className="text-gray-500 dark:text-gray-500 text-sm mt-2">This may take a few moments</p>
+            </div>
           </div>
         </div>
       </div>
@@ -85,10 +87,10 @@ export default function PlanReviewEditor() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div className="h-full">
+      <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl border border-gray-200 dark:border-gray-700 h-full flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-900/20 dark:to-yellow-900/20 px-8 py-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-900/20 dark:to-yellow-900/20 p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
           <div className="flex items-center space-x-3">
             <span className="text-2xl">📋</span>
             <div>
@@ -102,7 +104,8 @@ export default function PlanReviewEditor() {
           </div>
         </div>
 
-        <div className="px-8 py-8">
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-auto p-6">
           {/* Issue Context */}
           {state.issue && (
             <div className="mb-8 p-6 bg-gray-50 dark:bg-gray-750 rounded-lg border border-gray-200 dark:border-gray-600">
@@ -184,26 +187,28 @@ export default function PlanReviewEditor() {
                 />
               </div>
               
-              <div className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-400 rounded-lg p-4">
+              <div className="bg-orange-50 dark:bg-orange-900/20 border-l-4 border-orange-400 rounded-lg p-4">
                 <div className="flex items-start space-x-3">
-                  <span className="text-blue-500 text-lg flex-shrink-0">💡</span>
-                  <div className="text-sm text-blue-800 dark:text-blue-200">
-                    <p className="font-medium mb-2">Plan Review Guidelines:</p>
+                  <span className="text-orange-500 text-lg flex-shrink-0">💡</span>
+                  <div className="text-sm text-orange-800 dark:text-orange-200">
+                    <p className="font-medium mb-2">Plan Quality Tips:</p>
                     <ul className="space-y-1 text-sm">
-                      <li>• Ensure each step is clear and actionable</li>
-                      <li>• Break down complex tasks into smaller components</li>
-                      <li>• Include any specific requirements or constraints</li>
-                      <li>• This plan will be used to generate atomic subtasks</li>
+                      <li>• Break down complex tasks into clear, sequential steps</li>
+                      <li>• Include specific technologies, tools, and approaches</li>
+                      <li>• Consider dependencies between different components</li>
+                      <li>• Specify testing and validation approaches</li>
                     </ul>
                   </div>
                 </div>
               </div>
             </div>
           )}
+        </div>
 
-          {/* Actions */}
-          {planContent && (
-            <div className="mt-8 flex justify-end">
+        {/* Actions Footer */}
+        {planContent && (
+          <div className="border-t border-gray-200 dark:border-gray-700 p-6 flex-shrink-0">
+            <div className="flex justify-end">
               <button
                 onClick={handleSaveAndProceed}
                 disabled={!planContent.trim()}
@@ -213,8 +218,8 @@ export default function PlanReviewEditor() {
                 Save Plan & Generate Subtasks
               </button>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

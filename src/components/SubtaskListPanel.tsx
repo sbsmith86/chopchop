@@ -263,12 +263,14 @@ export default function SubtaskListPanel() {
 
   if (state.isLoading) {
     return (
-      <div className="max-w-6xl mx-auto">
-        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="px-8 py-12 text-center">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-indigo-200 border-t-indigo-600 mx-auto mb-6"></div>
-            <p className="text-gray-600 dark:text-gray-400 text-lg">Generating subtasks...</p>
-            <p className="text-gray-500 dark:text-gray-500 text-sm mt-2">Breaking down your plan into atomic tasks</p>
+      <div className="h-full">
+        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl border border-gray-200 dark:border-gray-700 h-full flex flex-col">
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-16 w-16 border-4 border-indigo-200 border-t-indigo-600 mx-auto mb-6"></div>
+              <p className="text-gray-600 dark:text-gray-400 text-lg">Generating subtasks...</p>
+              <p className="text-gray-500 dark:text-gray-500 text-sm mt-2">Breaking down your plan into atomic tasks</p>
+            </div>
           </div>
         </div>
       </div>
@@ -276,10 +278,10 @@ export default function SubtaskListPanel() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div className="h-full">
+      <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl border border-gray-200 dark:border-gray-700 h-full flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 px-8 py-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
           <div className="flex items-center space-x-3">
             <span className="text-2xl">📋</span>
             <div>
@@ -293,7 +295,8 @@ export default function SubtaskListPanel() {
           </div>
         </div>
 
-        <div className="px-8 py-8">
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-auto p-6">
           {/* Plan Context */}
           {state.executionPlan && (
             <div className="mb-8 p-6 bg-gray-50 dark:bg-gray-750 rounded-lg border border-gray-200 dark:border-gray-600">
@@ -407,10 +410,12 @@ export default function SubtaskListPanel() {
               </div>
             </div>
           )}
+        </div>
 
-          {/* Actions */}
-          {state.subtasks.length > 0 && (
-            <div className="mt-8 flex justify-end">
+        {/* Actions Footer */}
+        {state.subtasks.length > 0 && (
+          <div className="border-t border-gray-200 dark:border-gray-700 p-6 flex-shrink-0">
+            <div className="flex justify-end">
               <button
                 onClick={handleProceed}
                 className="inline-flex items-center px-6 py-3 text-base font-semibold text-white bg-indigo-600 border border-transparent rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-sm transition-colors"
@@ -419,8 +424,8 @@ export default function SubtaskListPanel() {
                 Proceed to Approval
               </button>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -102,10 +102,10 @@ ${task.isTooBig ? '⚠️ **Warning:** This task may be too large and should be 
   };
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div className="h-full">
+      <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl border border-gray-200 dark:border-gray-700 h-full flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 px-8 py-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
           <div className="flex items-center space-x-3">
             <span className="text-2xl">✅</span>
             <div>
@@ -119,7 +119,8 @@ ${task.isTooBig ? '⚠️ **Warning:** This task may be too large and should be 
           </div>
         </div>
 
-        <div className="px-8 py-8">
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-auto p-6">
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 p-6 rounded-lg border border-blue-200 dark:border-blue-700">
