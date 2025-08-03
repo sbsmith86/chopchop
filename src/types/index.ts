@@ -61,7 +61,7 @@ export interface Subtask {
 
 export interface AppConfig {
   githubPat?: string;
-  defaultRepo?: string;
+  githubRepo?: string; // Standardize on githubRepo
   openaiApiKey?: string;
   preferences: {
     theme: 'light' | 'dark' | 'system';
@@ -76,10 +76,11 @@ export interface CreatedIssue {
   number: number;
 }
 
-export type AppStep = 'input' | 'clarification' | 'plan' | 'subtasks' | 'execution' | 'approval';
+// Fix the type mismatch - use numbers like the rest of the codebase
+export type AppStep = 1 | 2 | 3 | 4 | 5;
 
 export interface AppState {
-  currentStep: AppStep;
+  currentStep: number; // Use number instead of AppStep for consistency
   config: AppConfig;
   issue: GitHubIssue | null;
   clarificationQuestions: ClarificationQuestion[];
@@ -101,4 +102,15 @@ export interface CreateIssueRequest {
 export interface GitHubConfig {
   pat: string;
   repo: string;
+}
+
+// Add this type for the storage utility
+export interface Config {
+  githubPat?: string;
+  githubRepo?: string; // Match AppConfig
+  openaiApiKey?: string;
+  preferences?: {
+    theme: 'light' | 'dark' | 'system';
+    editorMode: 'markdown' | 'rich';
+  };
 }

@@ -9,7 +9,7 @@ import { OpenAIClient } from '../utils/openai';
  * Allows users to review and edit the generated execution plan
  */
 export const PlanReviewEditor: React.FC = () => {
-  const { state, dispatch, setStep, setError, setLoading } = useAppContext();
+  const { state, dispatch, setError, setLoading, nextStep } = useAppContext();
   const [planContent, setPlanContent] = useState('');
   const [hasGenerated, setHasGenerated] = useState(false);
 
@@ -52,15 +52,41 @@ export const PlanReviewEditor: React.FC = () => {
    * Save the edited plan and proceed
    */
   const handleSaveAndProceed = () => {
+    console.log('PlanReviewEditor: handleSaveAndProceed called');
+    console.log('Current state:', {
+      currentStep: state.currentStep,
+      hasExecutionPlan: !!state.executionPlan,
+      planContentLength: planContent.length
+    });
+
     if (!planContent.trim()) {
       setError('Please enter or generate an execution plan before proceeding');
       return;
     }
 
-    const updatedPlan: ExecutionPlan = { content: planContent };
+    // Create the updated execution plan with proper structure
+    const updatedPlan: ExecutionPlan = {
+      id: state.executionPlan?.id || Date.now().toString(),
+      title: state.executionPlan?.title || `Execution Plan: ${state.issue?.title}`,
+      description: state.executionPlan?.description || 'User-edited execution plan',
+      content: planContent,
+      steps: state.executionPlan?.steps || [],
+      createdAt: state.executionPlan?.createdAt || new Date(),
+      updatedAt: new Date()
+    };
+
+    console.log('Saving execution plan:', updatedPlan);
+
+    // Save the plan to state
     dispatch({ type: 'SET_EXECUTION_PLAN', payload: updatedPlan });
+
+    // Clear any existing subtasks since we're updating the plan
+    dispatch({ type: 'SET_SUBTASKS', payload: [] });
+
     setError(null);
-    setStep(4); // Move to Subtasks step
+
+    console.log('Calling nextStep() - current step:', state.currentStep);
+    nextStep();
   };
 
   /**
@@ -236,4 +262,4 @@ export const PlanReviewEditor: React.FC = () => {
       </div>
     </div>
   );
-}
+};

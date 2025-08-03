@@ -202,6 +202,11 @@ export const SubtaskListPanel: React.FC = () => {
       return;
     }
 
+    if (!state.config.openaiApiKey) {
+      setError('OpenAI API key is required. Please configure it in settings.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setHasGenerated(true);
@@ -211,8 +216,19 @@ export const SubtaskListPanel: React.FC = () => {
       const subtasks = await openaiClient.generateSubtasks(state.executionPlan);
 
       dispatch({ type: 'SET_SUBTASKS', payload: subtasks });
+
+      // Show helpful feedback about "too big" tasks
+      const tooBigCount = subtasks.filter(task => task.isTooBig).length;
+      if (tooBigCount > 0) {
+        setError(`Generated ${subtasks.length} subtasks. ${tooBigCount} tasks are flagged as potentially too large and may benefit from splitting.`);
+      } else {
+        setError(null); // Clear any previous errors
+      }
+
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to generate subtasks');
+      console.error('Failed to generate subtasks:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to generate subtasks';
+      setError(`${errorMessage}. Please check your OpenAI API key and try again.`);
     } finally {
       setLoading(false);
     }

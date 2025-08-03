@@ -22,9 +22,13 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ onClose }) => {
   const handleSave = async (): Promise<void> => {
     setIsSaving(true);
     try {
+      console.log('Saving config:', localConfig);
       updateConfig(localConfig);
       await new Promise(resolve => setTimeout(resolve, 500)); // Brief feedback delay
       onClose?.();
+    } catch (error) {
+      console.error('Save failed:', error);
+      alert('Failed to save configuration');
     } finally {
       setIsSaving(false);
     }
@@ -32,25 +36,36 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ onClose }) => {
 
   /**
    * Handles configuration file import with error handling
-   * @param event - File input change event
    */
   const handleImport = async (event: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
     const file = event.target.files?.[0];
     if (file) {
       try {
-        await importConfig(file);
-        setLocalConfig(state.config);
+        const importedConfig = await importConfig(file);
+        setLocalConfig(importedConfig);
         event.target.value = '';
+        alert('Configuration imported successfully!');
       } catch (error) {
+        console.error('Import failed:', error);
         alert('Failed to import configuration file');
       }
     }
   };
 
   /**
+   * Handles configuration export
+   */
+  const handleExport = (): void => {
+    try {
+      exportConfig();
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Failed to export configuration');
+    }
+  };
+
+  /**
    * Updates a specific field in local configuration
-   * @param field - Configuration field to update
-   * @param value - New value for the field
    */
   const updateField = <K extends keyof typeof localConfig>(
     field: K,
@@ -61,7 +76,6 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ onClose }) => {
 
   /**
    * Updates nested preference fields
-   * @param preferences - Updated preferences object
    */
   const updatePreferences = (preferences: typeof localConfig.preferences): void => {
     setLocalConfig(prev => ({ ...prev, preferences }));
@@ -158,8 +172,8 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ onClose }) => {
               </label>
               <input
                 type="text"
-                value={localConfig.defaultRepo || ''}
-                onChange={e => updateField('defaultRepo', e.target.value)}
+                value={localConfig.githubRepo || ''}
+                onChange={e => updateField('githubRepo', e.target.value)}
                 className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 placeholder="owner/repository"
               />
@@ -256,7 +270,7 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ onClose }) => {
             </label>
 
             <button
-              onClick={exportConfig}
+              onClick={handleExport}
               className="inline-flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-700 hover:bg-gray-50 rounded-lg transition-all border border-gray-200 hover:border-gray-300"
             >
               <DownloadIcon className="w-4 h-4" />

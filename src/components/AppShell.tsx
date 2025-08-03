@@ -2,12 +2,12 @@ import React from 'react';
 import { useAppContext } from '../context/AppContext';
 import { Header } from './Header';
 import { ProgressIndicator } from './ProgressIndicator';
-import { ConfigPanel } from './ConfigPanel';  // Named import
-import { IssueInputPanel } from './IssueInputPanel';  // Named import
-import { ClarificationQuestionPanel } from './ClarificationQuestionPanel';  // Named import
-import { PlanReviewEditor } from './PlanReviewEditor';  // Named import
-import { SubtaskListPanel } from './SubtaskListPanel';  // Named import
-import { SummaryApprovalPanel } from './SummaryApprovalPanel';  // Named import
+import { ConfigPanel } from './ConfigPanel';
+import { IssueInputPanel } from './IssueInputPanel';
+import { ClarificationQuestionPanel } from './ClarificationQuestionPanel';
+import { PlanReviewEditor } from './PlanReviewEditor';
+import { SubtaskListPanel } from './SubtaskListPanel';
+import { SummaryApprovalPanel } from './SummaryApprovalPanel';
 import { ErrorBanner } from './ui/ErrorBanner';
 import { LoadingSpinner } from './ui/LoadingSpinner';
 import { SettingsIcon } from './ui/Icons';
@@ -16,12 +16,13 @@ import { SettingsIcon } from './ui/Icons';
  * Main application shell with modern wizard-style layout
  */
 export const AppShell: React.FC = () => {
-  const { state, dispatch } = useAppContext();
-  const [showConfig, setShowConfig] = React.useState(!state.config?.githubPat);
+  const { state } = useAppContext();
+  const [showConfig, setShowConfig] = React.useState(false);
 
+  // Check if the app is configured
   const isConfigured = Boolean(
     state.config?.githubPat &&
-    state.config?.defaultRepo &&
+    state.config?.githubRepo && // Use githubRepo instead of defaultRepo
     state.config?.openaiApiKey
   );
 
@@ -34,16 +35,15 @@ export const AppShell: React.FC = () => {
     }
 
     switch (state.currentStep) {
-      case 'input':
+      case 1:
         return <IssueInputPanel />;
-      case 'clarification':
+      case 2:
         return <ClarificationQuestionPanel />;
-      case 'plan':
+      case 3:
         return <PlanReviewEditor />;
-      case 'subtasks':
-      case 'execution':
+      case 4:
         return <SubtaskListPanel />;
-      case 'approval':
+      case 5:
         return <SummaryApprovalPanel />;
       default:
         return <IssueInputPanel />;
@@ -86,9 +86,7 @@ export const AppShell: React.FC = () => {
               <LoadingSpinner />
             </div>
           ) : (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-              {renderCurrentPanel()}
-            </div>
+            renderCurrentPanel()
           )}
         </div>
       </main>

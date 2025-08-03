@@ -20,7 +20,7 @@ export const IssueInputPanel: React.FC = () => {
       return false;
     }
 
-    if (inputType === 'url' && !state.config.defaultRepo) {
+    if (inputType === 'url' && !state.config.githubRepo) {
       setError('Default repository is required for URL input. Please configure it in settings.');
       return false;
     }
@@ -57,7 +57,7 @@ export const IssueInputPanel: React.FC = () => {
         const githubIssue = await fetchGitHubIssue(
           {
             pat: state.config.githubPat!,
-            repo: state.config.defaultRepo!
+            repo: state.config.githubRepo!
           },
           input.trim()
         );
@@ -78,7 +78,7 @@ export const IssueInputPanel: React.FC = () => {
           id: Date.now().toString(),
           title: 'Manual Input',
           body: input.trim(),
-          repository: state.config.defaultRepo
+          repository: state.config.githubRepo
         };
 
         dispatch({ type: 'SET_ISSUE', payload: issue });

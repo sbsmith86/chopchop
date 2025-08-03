@@ -130,48 +130,69 @@ export class OpenAIClient {
   }
 
   /**
-   * Generate subtasks from execution plan (MOCK - Issue 3 will implement this)
+   * Generate subtasks from execution plan using OpenAI
    */
   async generateSubtasks(plan: ExecutionPlan): Promise<Subtask[]> {
-    // Mock implementation for now - Issue 3 will replace this
-    return [
-      {
-        id: '1',
-        title: 'Set up development environment',
-        description: 'Configure local development environment with necessary tools and dependencies',
-        acceptanceCriteria: [
-          'Development environment is configured',
-          'All dependencies are installed',
-          'Project builds successfully'
-        ],
-        guardrails: [
-          'Use version-controlled configuration',
-          'Document setup process'
-        ],
-        estimatedHours: 4,
-        order: 1,
-        isTooBig: false,
-        tags: ['setup', 'environment']
-      },
-      {
-        id: '2',
-        title: 'Implement core functionality',
-        description: 'Build the main features according to requirements',
-        acceptanceCriteria: [
-          'Core features are implemented',
-          'Basic error handling is in place',
-          'Code follows team standards'
-        ],
-        guardrails: [
-          'Write tests for all new code',
-          'Follow existing patterns and conventions'
-        ],
-        estimatedHours: 16,
-        order: 2,
-        isTooBig: true,
-        tags: ['implementation', 'core']
+    try {
+      const prompt = this.buildSubtaskPrompt(plan);
+
+      const response = await fetch(`${this.baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        signal: AbortSignal.timeout(20000), // 20 second timeout for longer response
+        body: JSON.stringify({
+          model: 'gpt-3.5-turbo',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are an expert software engineer and project manager. Break down execution plans into atomic, actionable subtasks that can each be completed in under 2 hours. Each subtask should affect only a single component or file. Include specific acceptance criteria and guardrails for each task.'
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          max_tokens: 3000,
+          temperature: 0.6,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`OpenAI API error: ${response.status} - ${errorData.error?.message || response.statusText}`);
       }
-    ];
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content;
+
+      if (!content) {
+        throw new Error('No subtask content received from OpenAI API');
+      }
+
+      // Parse the subtasks from the response
+      const parsedSubtasks = this.parseSubtasksFromResponse(content);
+
+      if (parsedSubtasks.length === 0) {
+        throw new Error('No valid subtasks extracted from OpenAI response');
+      }
+
+      // Add IDs, order, and apply "too big" detection
+      const subtasks = parsedSubtasks.map((task, index) => ({
+        id: `subtask-${Date.now()}-${index}`,
+        order: index,
+        isTooBig: this.detectTooBigTask(task),
+        ...task
+      }));
+
+      return subtasks;
+
+    } catch (error) {
+      console.warn('OpenAI subtask generation failed, falling back to template:', error);
+      return this.getFallbackSubtasks(plan);
+    }
   }
 
   // PRIVATE HELPER METHODS
@@ -475,6 +496,278 @@ ${answeredQuestions || 'No additional clarifications provided'}
       updatedAt: new Date()
     };
   }
+
+  /**
+   * Builds prompt for subtask generation
+   */
+  private buildSubtaskPrompt(plan: ExecutionPlan): string {
+    return `Break down this execution plan into atomic, actionable subtasks. Each subtask should be completable in under 2 hours and affect only a single component or file.
+
+**EXECUTION PLAN:**
+${plan.content}
+
+**REQUIREMENTS FOR EACH SUBTASK:**
+- Title: Clear, specific action (e.g., "Create UserService class with email validation")
+- Description: Detailed explanation of what needs to be done
+- Acceptance Criteria: 3-5 specific, measurable outcomes that define completion
+- Guardrails: 2-4 rules to prevent scope creep or breaking existing functionality
+- Estimated Hours: Realistic time estimate (1-8 hours, prefer 1-4)
+- Tags: 2-3 relevant tags for categorization
+
+**ATOMICITY RULES:**
+- Each task should have ONE primary action
+- Avoid tasks with "and", "or", or multiple objectives
+- If a task affects multiple files/components, split it
+- Testing tasks should be separate from implementation tasks
+- Documentation tasks should be separate from coding tasks
+
+**FORMAT:**
+Return ONLY a JSON array of subtasks in this exact format:
+
+[
+  {
+    "title": "Task title here",
+    "description": "Detailed description of the task",
+    "acceptanceCriteria": [
+      "Specific outcome 1",
+      "Specific outcome 2",
+      "Specific outcome 3"
+    ],
+    "guardrails": [
+      "Don't modify existing API endpoints",
+      "Follow existing code patterns",
+      "Write unit tests for new functions"
+    ],
+    "estimatedHours": 3,
+    "tags": ["implementation", "backend"]
+  }
+]
+
+Generate 5-15 subtasks that cover the entire execution plan systematically.`;
+  }
+
+  /**
+   * Parses subtasks from OpenAI JSON response
+   */
+  private parseSubtasksFromResponse(content: string): Omit<Subtask, 'id' | 'order' | 'isTooBig'>[] {
+    try {
+      // Try to extract JSON from the response
+      const jsonMatch = content.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) {
+        throw new Error('No JSON array found in response');
+      }
+
+      const jsonString = jsonMatch[0];
+      const parsedTasks = JSON.parse(jsonString);
+
+      if (!Array.isArray(parsedTasks)) {
+        throw new Error('Response is not an array');
+      }
+
+      // Validate and clean the parsed tasks
+      return parsedTasks.map((task, index) => {
+        if (!task.title || !task.description) {
+          throw new Error(`Task ${index} missing required fields`);
+        }
+
+        return {
+          title: String(task.title).trim(),
+          description: String(task.description).trim(),
+          acceptanceCriteria: Array.isArray(task.acceptanceCriteria)
+            ? task.acceptanceCriteria.map(c => String(c).trim()).filter(c => c.length > 0)
+            : ['Task completed successfully'],
+          guardrails: Array.isArray(task.guardrails)
+            ? task.guardrails.map(g => String(g).trim()).filter(g => g.length > 0)
+            : ['Follow existing code patterns', 'Write appropriate tests'],
+          estimatedHours: Math.min(Math.max(Number(task.estimatedHours) || 2, 1), 8),
+          tags: Array.isArray(task.tags)
+            ? task.tags.map(t => String(t).trim()).filter(t => t.length > 0)
+            : ['general']
+        };
+      });
+
+    } catch (error) {
+      console.warn('Failed to parse JSON response, attempting fallback parsing:', error);
+      return this.parseFallbackSubtasks(content);
+    }
+  }
+
+  /**
+   * Fallback parsing when JSON parsing fails
+   */
+  private parseFallbackSubtasks(content: string): Omit<Subtask, 'id' | 'order' | 'isTooBig'>[] {
+    const tasks: Omit<Subtask, 'id' | 'order' | 'isTooBig'>[] = [];
+    const lines = content.split('\n');
+    let currentTask: Partial<Omit<Subtask, 'id' | 'order' | 'isTooBig'>> | null = null;
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+
+      // Detect task titles (numbered or bulleted)
+      if (trimmed.match(/^[\d\-\*]\s*\.?\s*[A-Z]/)) {
+        // Save previous task
+        if (currentTask && currentTask.title) {
+          tasks.push({
+            title: currentTask.title,
+            description: currentTask.description || currentTask.title,
+            acceptanceCriteria: currentTask.acceptanceCriteria || ['Task completed successfully'],
+            guardrails: currentTask.guardrails || ['Follow existing patterns'],
+            estimatedHours: currentTask.estimatedHours || 2,
+            tags: currentTask.tags || ['general']
+          });
+        }
+
+        // Start new task
+        const title = trimmed.replace(/^[\d\-\*]\s*\.?\s*/, '');
+        currentTask = {
+          title,
+          description: title,
+          acceptanceCriteria: ['Task completed successfully'],
+          guardrails: ['Follow existing patterns'],
+          estimatedHours: 2,
+          tags: ['general']
+        };
+      }
+    }
+
+    // Don't forget the last task
+    if (currentTask && currentTask.title) {
+      tasks.push({
+        title: currentTask.title,
+        description: currentTask.description || currentTask.title,
+        acceptanceCriteria: currentTask.acceptanceCriteria || ['Task completed successfully'],
+        guardrails: currentTask.guardrails || ['Follow existing patterns'],
+        estimatedHours: currentTask.estimatedHours || 2,
+        tags: currentTask.tags || ['general']
+      });
+    }
+
+    return tasks;
+  }
+
+  /**
+   * Detects if a task is "too big" based on TDD criteria
+   */
+  private detectTooBigTask(task: Omit<Subtask, 'id' | 'order' | 'isTooBig'>): boolean {
+    const title = task.title.toLowerCase();
+    const description = task.description.toLowerCase();
+    const content = `${title} ${description}`;
+
+    // Check for multiple actions/resources
+    const multipleActionWords = [' and ', ' or ', ' then ', ' also ', ' plus '];
+    const hasMultipleActions = multipleActionWords.some(word => content.includes(word));
+
+    // Check for high time estimate
+    const isHighEffort = task.estimatedHours > 4;
+
+    // Check for broad scope indicators
+    const broadScopeWords = ['entire', 'all', 'complete', 'full', 'comprehensive', 'multiple'];
+    const hasBroadScope = broadScopeWords.some(word => content.includes(word));
+
+    // Check for multiple component mentions
+    const componentWords = ['component', 'service', 'controller', 'model', 'view', 'api', 'endpoint'];
+    const componentCount = componentWords.filter(word => content.includes(word)).length;
+    const affectsMultipleComponents = componentCount > 1;
+
+    return hasMultipleActions || isHighEffort || hasBroadScope || affectsMultipleComponents;
+  }
+
+  /**
+   * Provides fallback subtasks when API fails
+   */
+  private getFallbackSubtasks(plan: ExecutionPlan): Subtask[] {
+    const baseSubtasks = [
+      {
+        title: 'Set up development environment',
+        description: 'Configure local development environment with necessary tools and dependencies',
+        acceptanceCriteria: [
+          'Development environment is configured',
+          'All dependencies are installed',
+          'Project builds successfully'
+        ],
+        guardrails: [
+          'Use version-controlled configuration',
+          'Document setup process',
+          'Test environment setup on clean machine'
+        ],
+        estimatedHours: 2,
+        tags: ['setup', 'environment']
+      },
+      {
+        title: 'Create core data models',
+        description: 'Define and implement the primary data structures needed for the feature',
+        acceptanceCriteria: [
+          'Data models are defined and documented',
+          'Models include necessary validation',
+          'Database migrations are created if needed'
+        ],
+        guardrails: [
+          'Follow existing model patterns',
+          'Add appropriate indexes',
+          'Include data validation rules'
+        ],
+        estimatedHours: 3,
+        tags: ['backend', 'data']
+      },
+      {
+        title: 'Implement business logic',
+        description: 'Build the core functionality according to requirements',
+        acceptanceCriteria: [
+          'Core features are implemented',
+          'Business rules are enforced',
+          'Error handling is in place'
+        ],
+        guardrails: [
+          'Write unit tests for all business logic',
+          'Follow SOLID principles',
+          'Handle edge cases appropriately'
+        ],
+        estimatedHours: 6,
+        isTooBig: true,
+        tags: ['implementation', 'core']
+      },
+      {
+        title: 'Create API endpoints',
+        description: 'Implement REST API endpoints for the new functionality',
+        acceptanceCriteria: [
+          'API endpoints are implemented',
+          'Request/response validation is in place',
+          'API documentation is updated'
+        ],
+        guardrails: [
+          'Follow existing API conventions',
+          'Include proper status codes',
+          'Add rate limiting if needed'
+        ],
+        estimatedHours: 4,
+        tags: ['api', 'backend']
+      },
+      {
+        title: 'Add comprehensive testing',
+        description: 'Create unit and integration tests for all new functionality',
+        acceptanceCriteria: [
+          'Unit tests cover all functions',
+          'Integration tests verify workflows',
+          'Test coverage is above 80%'
+        ],
+        guardrails: [
+          'Use existing test patterns',
+          'Include both positive and negative test cases',
+          'Mock external dependencies'
+        ],
+        estimatedHours: 4,
+        tags: ['testing', 'quality']
+      }
+    ];
+
+    // Add IDs and order to base subtasks
+    return baseSubtasks.map((task, index) => ({
+      id: `fallback-${Date.now()}-${index}`,
+      order: index,
+      isTooBig: task.isTooBig || false,
+      ...task
+    }));
+  }
 }
 
 // STANDALONE FUNCTIONS
@@ -516,4 +809,23 @@ export async function generateExecutionPlan(
 
   const client = new OpenAIClient(config.apiKey);
   return client.generateExecutionPlan(issue, questions);
+}
+
+/**
+ * Generate subtasks from execution plan (standalone function)
+ */
+export async function generateSubtasks(
+  config: { apiKey: string },
+  plan: ExecutionPlan
+): Promise<Subtask[]> {
+  if (!config.apiKey) {
+    throw new Error('OpenAI API key is required');
+  }
+
+  if (!plan.content) {
+    throw new Error('Execution plan content is required');
+  }
+
+  const client = new OpenAIClient(config.apiKey);
+  return client.generateSubtasks(plan);
 }
