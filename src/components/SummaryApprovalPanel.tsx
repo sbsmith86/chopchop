@@ -161,13 +161,18 @@ ${task.isTooBig ? '⚠️ **Warning:** This task may be too large and should be 
   });
 
   // Show progress if currently creating issues
-  if (isCreating && progress) {
+  if (isCreating) {
     console.log('Showing progress component');
     return (
       <div className="p-8">
         <div className="max-w-2xl mx-auto">
           <IssueCreationProgressComponent
-            progress={progress}
+            progress={progress || {
+              currentIssue: 0,
+              totalIssues: state.subtasks.length,
+              currentTask: 'Initializing GitHub issue creation...',
+              status: 'creating'
+            }}
             createdIssues={createdIssues}
           />
         </div>
