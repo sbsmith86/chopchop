@@ -1,10 +1,13 @@
 import React, { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
-import { AppState, GitHubIssue, ClarificationQuestion, ExecutionPlan, Subtask, CreatedIssue, AppConfig } from '../types';
+import { AppState, AppStep, GitHubIssue, ClarificationQuestion, ExecutionPlan, Subtask, CreatedIssue, AppConfig } from '../types';
 import { saveConfig, loadConfig, exportConfig as exportConfigFile, importConfig as importConfigFile } from '../utils/storage';
 
 const initialState: AppState = {
   currentStep: 1,
   config: {
+    githubPat: '',
+    githubRepo: '',
+    openaiApiKey: '',
     preferences: {
       theme: 'light',
       editorMode: 'markdown'
@@ -20,39 +23,57 @@ const initialState: AppState = {
 };
 
 type AppAction =
+  | { type: 'SET_CONFIG'; payload: AppConfig }
+  | { type: 'UPDATE_CONFIG'; payload: Partial<AppConfig> }
+  | { type: 'LOAD_CONFIG'; payload: AppConfig }
   | { type: 'SET_ISSUE'; payload: GitHubIssue }
   | { type: 'SET_CLARIFICATION_QUESTIONS'; payload: ClarificationQuestion[] }
-  | { type: 'UPDATE_CLARIFICATION_ANSWER'; payload: { id: string; answer: string } }
+  | { type: 'UPDATE_CLARIFICATION_ANSWER'; payload: { questionId: string; answer: string } }
   | { type: 'SET_EXECUTION_PLAN'; payload: ExecutionPlan }
   | { type: 'SET_SUBTASKS'; payload: Subtask[] }
   | { type: 'UPDATE_SUBTASK'; payload: Subtask }
-  | { type: 'DELETE_SUBTASK'; payload: string }
-  | { type: 'SET_CREATED_ISSUES'; payload: CreatedIssue[] }
-  | { type: 'SET_CONFIG'; payload: Partial<AppConfig> }
-  | { type: 'UPDATE_CONFIG'; payload: Partial<AppConfig> }
-  | { type: 'LOAD_CONFIG'; payload: AppConfig }
-  | { type: 'SET_STEP'; payload: number }
-  | { type: 'SET_LOADING'; payload: boolean }
+  | { type: 'SPLIT_SUBTASK'; payload: { originalId: string; newSubtasks: Subtask[] } }
   | { type: 'SET_ERROR'; payload: string | null }
+  | { type: 'SET_LOADING'; payload: boolean }
+  | { type: 'SET_STEP'; payload: number }
+  | { type: 'SET_CURRENT_STEP'; payload: AppStep }
   | { type: 'RESET_STATE' };
 
 const appReducer = (state: AppState, action: AppAction): AppState => {
   switch (action.type) {
+    case 'SET_CONFIG':
+      const configToSave = action.payload;
+      saveConfig(configToSave);
+      return { ...state, config: configToSave };
+
+    case 'UPDATE_CONFIG':
+      const updatedConfig = { ...state.config, ...action.payload };
+      saveConfig(updatedConfig);
+      return { ...state, config: updatedConfig };
+
+    case 'LOAD_CONFIG':
+      return { ...state, config: action.payload };
+
     case 'SET_ISSUE':
       return { ...state, issue: action.payload };
+
     case 'SET_CLARIFICATION_QUESTIONS':
       return { ...state, clarificationQuestions: action.payload };
+
     case 'UPDATE_CLARIFICATION_ANSWER':
       return {
         ...state,
         clarificationQuestions: state.clarificationQuestions.map(q =>
-          q.id === action.payload.id ? { ...q, answer: action.payload.answer } : q
+          q.id === action.payload.questionId ? { ...q, answer: action.payload.answer } : q
         )
       };
+
     case 'SET_EXECUTION_PLAN':
       return { ...state, executionPlan: action.payload };
+
     case 'SET_SUBTASKS':
       return { ...state, subtasks: action.payload };
+
     case 'UPDATE_SUBTASK':
       return {
         ...state,
@@ -60,33 +81,48 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
           task.id === action.payload.id ? action.payload : task
         )
       };
-    case 'DELETE_SUBTASK':
-      return {
-        ...state,
-        subtasks: state.subtasks.filter(task => task.id !== action.payload)
-      };
-    case 'SET_CREATED_ISSUES':
-      return { ...state, createdIssues: action.payload };
-    case 'SET_CONFIG':
-    case 'UPDATE_CONFIG':
-      const updatedConfig = { ...state.config, ...action.payload };
-      // Save to localStorage immediately
-      try {
-        saveConfig(updatedConfig);
-      } catch (error) {
-        console.error('Failed to save config to localStorage:', error);
-      }
-      return { ...state, config: updatedConfig };
-    case 'LOAD_CONFIG':
-      return { ...state, config: action.payload };
-    case 'SET_STEP':
-      return { ...state, currentStep: action.payload };
-    case 'SET_LOADING':
-      return { ...state, isLoading: action.payload };
+
+    case 'SPLIT_SUBTASK': {
+      const { originalId, newSubtasks } = action.payload;
+      const originalIndex = state.subtasks.findIndex(task => task.id === originalId);
+
+      if (originalIndex === -1) return state;
+
+      // Remove original task and insert new tasks at the same position
+      const updatedSubtasks = [
+        ...state.subtasks.slice(0, originalIndex),
+        ...newSubtasks.map((task, index) => ({
+          ...task,
+          id: `${originalId}-split-${index}`,
+          order: originalIndex + index
+        })),
+        ...state.subtasks.slice(originalIndex + 1).map(task => ({
+          ...task,
+          order: task.order + newSubtasks.length - 1
+        }))
+      ];
+
+      return { ...state, subtasks: updatedSubtasks };
+    }
+
     case 'SET_ERROR':
       return { ...state, error: action.payload };
+
+    case 'SET_LOADING':
+      return { ...state, isLoading: action.payload };
+
+    case 'SET_STEP':
+      return { ...state, currentStep: action.payload };
+
+    case 'SET_CURRENT_STEP':
+      return { ...state, currentStep: action.payload };
+
     case 'RESET_STATE':
-      return initialState;
+      return {
+        ...initialState,
+        config: state.config // Keep the configuration
+      };
+
     default:
       return state;
   }
@@ -95,11 +131,10 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
 interface AppContextType {
   state: AppState;
   dispatch: React.Dispatch<AppAction>;
-  setStep: (step: number) => void;
-  nextStep: () => void;
-  prevStep: () => void;
   setError: (error: string | null) => void;
   setLoading: (loading: boolean) => void;
+  nextStep: () => void;
+  previousStep: () => void;
   resetState: () => void;
   updateConfig: (config: Partial<AppConfig>) => void;
   exportConfig: () => void;
@@ -117,17 +152,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (savedConfig) {
       dispatch({ type: 'LOAD_CONFIG', payload: savedConfig });
     }
-  }, []);
-
-  const setStep = useCallback((step: number): void => {
-    console.log('setStep called with:', step);
-
-    if (step < 1 || step > 5) {
-      console.warn('Invalid step number:', step);
-      return;
-    }
-
-    dispatch({ type: 'SET_STEP', payload: step });
   }, []);
 
   const nextStep = useCallback((): void => {
@@ -177,7 +201,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     dispatch({ type: 'SET_STEP', payload: nextStepNumber });
   }, [state.currentStep, state.issue, state.executionPlan, state.subtasks.length]);
 
-  const prevStep = useCallback((): void => {
+  const previousStep = useCallback((): void => {
     const prevStepNumber = Math.max(state.currentStep - 1, 1);
     dispatch({ type: 'SET_STEP', payload: prevStepNumber });
   }, [state.currentStep]);
@@ -200,7 +224,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     dispatch({ type: 'UPDATE_CONFIG', payload: config });
   }, []);
 
-  const exportConfigFunction = useCallback((): void => {
+  const exportConfig = useCallback((): void => {
     try {
       exportConfigFile(state.config);
     } catch (error) {
@@ -209,7 +233,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [state.config, setError]);
 
-  const importConfigFunction = useCallback(async (file: File): Promise<void> => {
+  const importConfig = useCallback(async (file: File): Promise<void> => {
     try {
       const importedConfig = await importConfigFile(file);
       dispatch({ type: 'UPDATE_CONFIG', payload: importedConfig });
@@ -223,15 +247,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const contextValue: AppContextType = {
     state,
     dispatch,
-    setStep,
-    nextStep,
-    prevStep,
     setError,
     setLoading,
+    nextStep,
+    previousStep,
     resetState,
     updateConfig,
-    exportConfig: exportConfigFunction,
-    importConfig: importConfigFunction
+    exportConfig,
+    importConfig
   };
 
   return (

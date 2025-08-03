@@ -72,10 +72,10 @@ export interface AppConfig {
 }
 
 export interface CreatedIssue {
-  id: number;
+  number: number;
   title: string;
   url: string;
-  number: number;
+  subtaskId: string; // Add this for linking to original subtask
 }
 
 // Fix the type mismatch - use numbers like the rest of the codebase
@@ -115,4 +115,30 @@ export interface Config {
     theme: 'light' | 'dark' | 'system';
     editorMode: 'markdown' | 'rich';
   };
+}
+
+// Add to existing types - no changes to existing interfaces
+
+export interface SubtaskSplit {
+  originalTaskId: string;
+  newSubtasks: Omit<Subtask, 'id' | 'order'>[];
+}
+
+// Add these interfaces to your existing types (they might already exist)
+
+export interface IssueCreationProgress {
+  currentIssue: number;
+  totalIssues: number;
+  currentTask: string;
+  status: 'creating' | 'completed' | 'error';
+  createdIssue?: CreatedIssue;
+  error?: string;
+}
+
+export interface CreationState {
+  isCreating: boolean;
+  progress: IssueCreationProgress | null;
+  createdIssues: CreatedIssue[];
+  completedAt: Date | null;
+  errors: string[];
 }

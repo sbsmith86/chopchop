@@ -1,110 +1,72 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { generateClarificationQuestions } from '../utils/openai';
 import { ClarificationQuestion } from '../types';
 
 /**
- * Panel for collecting clarification questions and answers from users
- * Uses AI to generate relevant questions based on the issue content
+ * Panel for displaying and answering clarification questions
  */
 export const ClarificationQuestionPanel: React.FC = () => {
-  const { state, dispatch, setError, setLoading, nextStep } = useAppContext();
-  const [isGenerating, setIsGenerating] = useState(false);
+  const { state, dispatch, setError, nextStep } = useAppContext();
+  const [localAnswers, setLocalAnswers] = useState<{ [key: string]: string }>({});
 
-  /**
-   * Generates clarification questions using OpenAI API
-   */
-  const generateQuestions = async (): Promise<void> => {
-    if (!state.issue) {
-      setError('No issue data available for generating questions');
-      return;
-    }
+  // Initialize local answers from state
+  React.useEffect(() => {
+    const initialAnswers: { [key: string]: string } = {};
+    state.clarificationQuestions.forEach(q => {
+      initialAnswers[q.id] = q.answer || '';
+    });
+    setLocalAnswers(initialAnswers);
+  }, [state.clarificationQuestions]);
 
-    if (!state.config.openaiApiKey) {
-      setError('OpenAI API key is required. Please configure it in settings.');
-      return;
-    }
+  const handleAnswerChange = (questionId: string, answer: string) => {
+    // Update local state immediately for responsiveness
+    setLocalAnswers(prev => ({
+      ...prev,
+      [questionId]: answer
+    }));
 
-    setIsGenerating(true);
-    setError(null);
-
-    try {
-      const questions = await generateClarificationQuestions(
-        { apiKey: state.config.openaiApiKey },
-        {
-          issueTitle: state.issue.title,
-          issueBody: state.issue.body
-        }
-      );
-
-      // Convert to ClarificationQuestion format
-      const clarificationQuestions: ClarificationQuestion[] = questions.map((question, index) => ({
-        id: `q-${Date.now()}-${index}`,
-        question,
-        answer: '',
-        required: true
-      }));
-
-      dispatch({ type: 'SET_CLARIFICATION_QUESTIONS', payload: clarificationQuestions });
-
-      // Show success feedback if using fallback questions
-      if (questions.some(q => q.includes('specific technical requirements'))) {
-        setError('Using fallback questions due to OpenAI API issue. Questions may be less specific.');
-      }
-
-    } catch (error) {
-      console.error('Failed to generate questions:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to generate clarification questions';
-      setError(`${errorMessage}. Please check your OpenAI API key and try again.`);
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  /**
-   * Auto-generate questions when component mounts
-   */
-  useEffect(() => {
-    if (state.clarificationQuestions.length === 0 && state.issue) {
-      generateQuestions();
-    }
-  }, [state.issue]);
-
-  /**
-   * Updates an answer for a specific question
-   */
-  const updateAnswer = (questionId: string, answer: string): void => {
+    // Update global state
     dispatch({
       type: 'UPDATE_CLARIFICATION_ANSWER',
-      payload: { id: questionId, answer }
+      payload: { questionId, answer }
     });
   };
 
-  /**
-   * Checks if all required questions are answered
-   */
-  const canProceed = (): boolean => {
-    return state.clarificationQuestions.every(q =>
-      !q.required || (q.answer && q.answer.trim().length > 0)
+  const handleProceed = () => {
+    // Validate that all required questions are answered
+    const unansweredQuestions = state.clarificationQuestions.filter(
+      q => q.required && (!localAnswers[q.id] || localAnswers[q.id].trim() === '')
     );
-  };
 
-  /**
-   * Proceeds to next step after validation
-   */
-  const handleNext = (): void => {
-    if (canProceed()) {
-      nextStep();
+    if (unansweredQuestions.length > 0) {
+      setError(`Please answer all required questions: ${unansweredQuestions.map(q => q.question).join(', ')}`);
+      return;
     }
+
+    setError(null);
+    nextStep();
   };
 
-  if (isGenerating) {
+  if (state.clarificationQuestions.length === 0) {
     return (
       <div className="p-8">
-        <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
-          <div className="w-12 h-12 border-4 border-blue-200 rounded-full animate-spin border-t-blue-600"></div>
-          <p className="text-gray-600 font-medium">Analyzing issue and generating clarification questions...</p>
-          <p className="text-sm text-gray-500">This may take a few seconds</p>
+        <div className="max-w-2xl mx-auto text-center">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-2xl">✅</span>
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            No Additional Questions Needed
+          </h2>
+          <p className="text-gray-600 mb-6">
+            The issue description is clear enough to proceed with creating an execution plan.
+          </p>
+          <button
+            onClick={nextStep}
+            className="inline-flex items-center px-6 py-3 text-base font-semibold text-white bg-gradient-to-r from-blue-500 to-indigo-600 border border-transparent rounded-xl hover:from-blue-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-lg transition-all"
+          >
+            <span className="mr-2">→</span>
+            Continue to Plan Review
+          </button>
         </div>
       </div>
     );
@@ -113,99 +75,114 @@ export const ClarificationQuestionPanel: React.FC = () => {
   return (
     <div className="p-8">
       <div className="max-w-3xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900">Clarification Questions</h2>
-          <p className="text-gray-600 mt-2">
-            AI-generated questions based on your issue to help create a better execution plan.
-          </p>
-          {state.issue && (
-            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <h3 className="font-medium text-blue-900 mb-2">Analyzing Issue:</h3>
-              <p className="text-blue-800 font-medium">{state.issue.title}</p>
-              {state.issue.body && (
-                <p className="text-blue-700 text-sm mt-1 line-clamp-3">
-                  {state.issue.body.substring(0, 200)}...
-                </p>
-              )}
-            </div>
-          )}
-        </div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Clarification Questions</h2>
+        <p className="text-gray-600 mb-8">
+          Please provide additional details to help create a more accurate execution plan.
+        </p>
 
-        {/* Questions */}
         <div className="space-y-6">
           {state.clarificationQuestions.map((question, index) => (
             <div
               key={question.id}
-              className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100"
+              className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm"
             >
               <div className="flex items-start space-x-4">
-                <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <span className="text-white font-semibold text-sm">{index + 1}</span>
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <span className="text-blue-600 font-semibold text-sm">
+                      {index + 1}
+                    </span>
+                  </div>
                 </div>
+
                 <div className="flex-1">
-                  <h3 className="font-medium text-gray-900 mb-3">
-                    {question.question}
-                    {question.required && <span className="text-red-500 ml-1">*</span>}
-                  </h3>
-                  <textarea
-                    value={question.answer || ''}
-                    onChange={(e) => updateAnswer(question.id, e.target.value)}
-                    placeholder="Enter your answer here..."
-                    rows={3}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-vertical"
-                  />
+                  <div className="flex items-center space-x-2 mb-3">
+                    <h3 className="text-base font-semibold text-gray-900">
+                      {question.question}
+                    </h3>
+                    {question.required && (
+                      <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full">
+                        Required
+                      </span>
+                    )}
+                  </div>
+
+                  {question.context && (
+                    <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+                      {question.context}
+                    </p>
+                  )}
+
+                  {question.type === 'text' && (
+                    <textarea
+                      value={localAnswers[question.id] || ''}
+                      onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                      rows={3}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none"
+                      placeholder="Enter your answer here..."
+                    />
+                  )}
+
+                  {question.type === 'choice' && question.options && (
+                    <div className="space-y-2">
+                      {question.options.map((option, optionIndex) => (
+                        <label
+                          key={optionIndex}
+                          className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                        >
+                          <input
+                            type="radio"
+                            name={question.id}
+                            value={option}
+                            checked={localAnswers[question.id] === option}
+                            onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                            className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-gray-700">{option}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+
+                  {question.type === 'number' && (
+                    <input
+                      type="number"
+                      value={localAnswers[question.id] || ''}
+                      onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                      placeholder="Enter a number..."
+                    />
+                  )}
                 </div>
               </div>
             </div>
           ))}
         </div>
 
-        {/* No questions generated */}
-        {state.clarificationQuestions.length === 0 && !isGenerating && (
-          <div className="text-center py-16">
-            <div className="flex flex-col items-center space-y-6">
-              <div className="w-20 h-20 bg-gradient-to-br from-amber-100 to-orange-100 rounded-2xl flex items-center justify-center">
-                <span className="text-3xl">❓</span>
+        {/* Progress Summary */}
+        <div className="mt-8 p-4 bg-gray-50 rounded-xl border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                <span className="text-blue-600">📝</span>
               </div>
               <div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  No Questions Generated
-                </h3>
-                <p className="text-gray-600 text-base mb-6 max-w-md mx-auto">
-                  We couldn't generate clarification questions for this issue. You can proceed to plan generation or try regenerating questions.
+                <h3 className="text-sm font-semibold text-gray-900">Progress</h3>
+                <p className="text-sm text-gray-600">
+                  {state.clarificationQuestions.filter(q => localAnswers[q.id] && localAnswers[q.id].trim() !== '').length} of {state.clarificationQuestions.length} questions answered
                 </p>
               </div>
-              <button
-                onClick={generateQuestions}
-                className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-lg hover:shadow-xl"
-              >
-                Generate Questions
-              </button>
             </div>
-          </div>
-        )}
-
-        {/* Actions */}
-        {state.clarificationQuestions.length > 0 && (
-          <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-200">
-            <button
-              onClick={generateQuestions}
-              disabled={isGenerating}
-              className="px-4 py-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-all border border-blue-200 hover:border-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isGenerating ? 'Generating...' : 'Regenerate Questions'}
-            </button>
 
             <button
-              onClick={handleNext}
-              disabled={!canProceed()}
-              className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleProceed}
+              className="inline-flex items-center px-6 py-3 text-base font-semibold text-white bg-gradient-to-r from-blue-500 to-indigo-600 border border-transparent rounded-xl hover:from-blue-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-lg transition-all"
             >
+              <span className="mr-2">→</span>
               Continue to Plan Review
             </button>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

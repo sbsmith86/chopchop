@@ -1,221 +1,74 @@
-import { GitHubIssue, CreatedIssue, Subtask } from '../types';
+import { Subtask, CreatedIssue, GitHubIssue } from '../types';
+
+// Move interfaces to the top of the file, outside any class
+export interface IssueCreationProgress {
+  currentIssue: number;
+  totalIssues: number;
+  currentTask: string;
+  status: 'creating' | 'completed' | 'error';
+  createdIssue?: CreatedIssue;
+  error?: string;
+}
+
+export type ProgressCallback = (progress: IssueCreationProgress) => void;
 
 /**
- * GitHub API client for fetching issues and creating new issues
+ * GitHub API client for creating issues
  */
 export class GitHubClient {
-  private pat: string;
   private baseUrl = 'https://api.github.com';
 
-  constructor(pat: string) {
-    this.pat = pat;
-  }
+  constructor(private token: string) {}
 
   /**
-   * Fetch a GitHub issue by URL or owner/repo/number
+   * Fetch a GitHub issue by URL
    */
-  async fetchIssue(urlOrPath: string): Promise<GitHubIssue> {
+  async fetchIssue(issueUrl: string): Promise<GitHubIssue> {
+    const parsed = parseGitHubIssueUrl(issueUrl);
+    if (!parsed) {
+      throw new Error('Invalid GitHub issue URL format');
+    }
+
+    const { owner, repo, issueNumber } = parsed;
+
     try {
-      // Parse the URL to extract owner, repo, and issue number
-      const parsed = parseGitHubIssueUrl(urlOrPath);
-      if (!parsed) {
-        throw new Error('Invalid GitHub issue URL format. Expected: https://github.com/owner/repo/issues/123');
-      }
-
-      const { owner, repo, issueNumber } = parsed;
-      const url = `${this.baseUrl}/repos/${owner}/${repo}/issues/${issueNumber}`;
-
-      const response = await fetch(url, {
-        headers:
-          {
-            'Authorization': `token ${this.pat}`,
-            'Accept': 'application/vnd.github.v3+json',
-            'User-Agent': 'ChopChop-Issue-Decomposer',
-          },
+      const response = await fetch(`${this.baseUrl}/repos/${owner}/${repo}/issues/${issueNumber}`, {
+        headers: {
+          'Authorization': `Bearer ${this.token}`,
+          'Accept': 'application/vnd.github.v3+json',
+        },
       });
 
       if (!response.ok) {
         if (response.status === 404) {
-          throw new Error(`Issue not found. This could be because:
-• The repository is private and your PAT lacks 'repo' permissions
-• The issue number doesn't exist
-• The repository URL is incorrect
-• Your PAT has expired or is invalid`);
-        } else if (response.status === 401) {
-          throw new Error('Invalid or expired GitHub Personal Access Token');
-        } else if (response.status === 403) {
-          throw new Error('GitHub API rate limit exceeded or insufficient permissions');
+          throw new Error('Issue not found. Please check the URL and your access permissions.');
+        }
+        if (response.status === 401) {
+          throw new Error('Invalid GitHub token or insufficient permissions.');
         }
         throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
 
-      // Validate the response has required fields
-      if (!data || typeof data.id === 'undefined' || !data.title) {
-        throw new Error('Invalid response from GitHub API - missing required fields');
-      }
-
-      // Convert to our internal format
       return {
-        id: data.id.toString(),
-        title: data.title,
-        body: data.body || '',
-        url: data.html_url,
         number: data.number,
-        repository: `${owner}/${repo}`
-      };
-
-    } catch (error) {
-      console.error('Failed to fetch GitHub issue:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Create a new GitHub issue
-   */
-  async createIssue(
-    owner: string,
-    repo: string,
-    title: string,
-    body: string,
-    labels?: string[]
-  ): Promise<CreatedIssue> {
-    try {
-      const issueData = {
-        title,
-        body,
-        labels: labels || [],
-      };
-
-      const response = await fetch(`${this.baseUrl}/repos/${owner}/${repo}/issues`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.pat}`,
-          'Accept': 'application/vnd.github.v3+json',
-          'Content-Type': 'application/json',
-          'User-Agent': 'ChopChop-Issue-Decomposer',
-        },
-        body: JSON.stringify(issueData),
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error('Authentication failed. Please check your GitHub Personal Access Token.');
-        } else if (response.status === 403) {
-          throw new Error('Permission denied. Please ensure your token has access to create issues in this repository.');
-        } else if (response.status === 404) {
-          throw new Error('Repository not found. Please check the repository path.');
-        } else {
-          throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
-        }
-      }
-
-      const createdIssue = await response.json();
-
-      return {
-        number: createdIssue.number,
-        url: createdIssue.html_url,
-        title: createdIssue.title,
+        title: data.title || '',
+        body: data.body || '',
+        url: data.html_url || issueUrl,
+        state: data.state || 'open',
+        labels: (data.labels || []).map((label: any) =>
+          typeof label === 'string' ? label : label.name || ''
+        ),
+        assignees: (data.assignees || []).map((assignee: any) => assignee.login || ''),
+        createdAt: data.created_at || new Date().toISOString(),
+        updatedAt: data.updated_at || new Date().toISOString(),
       };
     } catch (error) {
-      console.error('Failed to create GitHub issue:', error);
       if (error instanceof Error) {
         throw error;
       }
-      throw new Error('Failed to create GitHub issue');
-    }
-  }
-
-  /**
-   * Create multiple issues from subtasks
-   */
-  async createSubtaskIssues(
-    owner: string,
-    repo: string,
-    subtasks: Subtask[],
-    parentIssueTitle: string,
-    parentIssueUrl?: string
-  ): Promise<CreatedIssue[]> {
-    const createdIssues: CreatedIssue[] = [];
-
-    for (const [index, subtask] of subtasks.entries()) {
-      try {
-        const body = this.formatSubtaskBody(subtask, index + 1, parentIssueTitle, parentIssueUrl);
-        const labels = ['subtask', 'chopchop-generated'];
-
-        if (subtask.isTooBig) {
-          labels.push('needs-splitting');
-        }
-
-        const createdIssue = await this.createIssue(
-          owner,
-          repo,
-          `[${index + 1}/${subtasks.length}] ${subtask.title}`,
-          body,
-          labels
-        );
-
-        createdIssues.push(createdIssue);
-
-        // Add a small delay to avoid rate limiting
-        await new Promise(resolve => setTimeout(resolve, 500));
-      } catch (error) {
-        console.error(`Failed to create issue for subtask ${index + 1}:`, error);
-        throw new Error(`Failed to create issue for subtask: ${subtask.title}`);
-      }
-    }
-
-    return createdIssues;
-  }
-
-  /**
-   * Format subtask as GitHub issue body
-   */
-  private formatSubtaskBody(
-    subtask: Subtask,
-    taskNumber: number,
-    parentTitle: string,
-    parentUrl?: string
-  ): string {
-    const parentSection = parentUrl
-      ? `**Parent Issue:** [${parentTitle}](${parentUrl})`
-      : `**Parent Issue:** ${parentTitle}`;
-
-    return `${parentSection}
-
-**Task ${taskNumber} Description:**
-${subtask.description}
-
-## Acceptance Criteria
-${subtask.acceptanceCriteria.map(criteria => `- [ ] ${criteria}`).join('\n')}
-
-## Guardrails
-${subtask.guardrails.map(guardrail => `- ⚠️ ${guardrail}`).join('\n')}
-
-${subtask.isTooBig ? '\n⚠️ **Warning:** This task may be too large and should consider being split into smaller tasks.\n' : ''}
-
----
-*Generated by ChopChop Issue Decomposer*`;
-  }
-
-  /**
-   * Validate GitHub PAT by making a simple API call
-   */
-  async validateToken(): Promise<boolean> {
-    try {
-      const response = await fetch(`${this.baseUrl}/user`, {
-        headers: {
-          'Authorization': `Bearer ${this.pat}`,
-          'Accept': 'application/vnd.github.v3+json',
-          'User-Agent': 'ChopChop-Issue-Decomposer',
-        },
-      });
-
-      return response.ok;
-    } catch {
-      return false;
+      throw new Error('Failed to fetch GitHub issue');
     }
   }
 
@@ -226,16 +79,202 @@ ${subtask.isTooBig ? '\n⚠️ **Warning:** This task may be too large and shoul
     try {
       const response = await fetch(`${this.baseUrl}/repos/${owner}/${repo}`, {
         headers: {
-          'Authorization': `token ${this.pat}`,
+          'Authorization': `Bearer ${this.token}`,
           'Accept': 'application/vnd.github.v3+json',
-          'User-Agent': 'ChopChop-Issue-Decomposer',
         },
       });
+
       return response.ok;
-    } catch (error) {
-      console.error('Failed to validate repository:', error);
+    } catch {
       return false;
     }
+  }
+
+  /**
+   * Create GitHub issues from subtasks with progress tracking
+   */
+  async createSubtaskIssues(
+    owner: string,
+    repo: string,
+    subtasks: Subtask[],
+    parentTitle: string,
+    parentUrl?: string,
+    onProgress?: ProgressCallback
+  ): Promise<CreatedIssue[]> {
+    const createdIssues: CreatedIssue[] = [];
+
+    for (let i = 0; i < subtasks.length; i++) {
+      const subtask = subtasks[i];
+
+      try {
+        // Report progress: starting this issue
+        onProgress?.({
+          currentIssue: i + 1,
+          totalIssues: subtasks.length,
+          currentTask: subtask.title,
+          status: 'creating'
+        });
+
+        // Add small delay for UX (shows progress)
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        const body = this.buildIssueBody(subtask, i + 1, subtasks.length, parentTitle, parentUrl);
+
+        const response = await fetch(`${this.baseUrl}/repos/${owner}/${repo}/issues`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${this.token}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            title: `${i + 1}. ${subtask.title}`,
+            body,
+            labels: [...(subtask.tags || []), 'chopchop-generated']
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(`GitHub API error (${response.status}): ${errorData.message || response.statusText}`);
+        }
+
+        const issueData = await response.json();
+        const createdIssue: CreatedIssue = {
+          number: issueData.number,
+          title: issueData.title,
+          url: issueData.html_url,
+          subtaskId: subtask.id
+        };
+
+        createdIssues.push(createdIssue);
+
+        // Report progress: completed this issue
+        onProgress?.({
+          currentIssue: i + 1,
+          totalIssues: subtasks.length,
+          currentTask: subtask.title,
+          status: 'completed',
+          createdIssue
+        });
+
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+        // Report error
+        onProgress?.({
+          currentIssue: i + 1,
+          totalIssues: subtasks.length,
+          currentTask: subtask.title,
+          status: 'error',
+          error: errorMessage
+        });
+
+        throw error; // Re-throw to stop the process
+      }
+    }
+
+    return createdIssues;
+  }
+
+  /**
+   * Build issue body with subtask details
+   */
+  private buildIssueBody(
+    subtask: Subtask,
+    taskNumber: number,
+    totalTasks: number,
+    parentTitle: string,
+    parentUrl?: string
+  ): string {
+    const parentSection = parentUrl
+      ? `**Original Issue:** [${parentTitle}](${parentUrl})\n\n`
+      : `**Original Issue:** ${parentTitle}\n\n`;
+
+    const acceptanceCriteria = (subtask.acceptanceCriteria || []).length > 0
+      ? `## Acceptance Criteria\n\n${(subtask.acceptanceCriteria || []).map(criteria => `- [ ] ${criteria}`).join('\n')}\n\n`
+      : '';
+
+    const guardrails = (subtask.guardrails || []).length > 0
+      ? `## Guardrails\n\n${(subtask.guardrails || []).map(guardrail => `- ⚠️ ${guardrail}`).join('\n')}\n\n`
+      : '';
+
+    const tags = (subtask.tags || []).length > 0
+      ? `**Tags:** ${(subtask.tags || []).map(tag => `\`${tag}\``).join(', ')}\n`
+      : '';
+
+    const estimation = `**Estimated Hours:** ${subtask.estimatedHours || 1}\n`;
+    const sequence = `**Task ${taskNumber} of ${totalTasks}**\n`;
+
+    const dependencies = (subtask.dependsOn || []).length > 0
+      ? `**Dependencies:** ${(subtask.dependsOn || []).join(', ')}\n`
+      : '';
+
+    return `${parentSection}${sequence}${estimation}${dependencies}${tags}
+
+## Description
+
+${subtask.description || 'No description provided'}
+
+${acceptanceCriteria}${guardrails}---
+*This issue was automatically generated by ChopChop Issue Decomposer*`;
+  }
+
+  /**
+   * Test GitHub connection
+   */
+  async testConnection(owner: string, repo: string): Promise<boolean> {
+    try {
+      const response = await fetch(`${this.baseUrl}/repos/${owner}/${repo}`, {
+        headers: {
+          'Authorization': `Bearer ${this.token}`,
+          'Accept': 'application/vnd.github.v3+json',
+        },
+      });
+
+      return response.ok;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Create a single GitHub issue
+   */
+  async createIssue(
+    owner: string,
+    repo: string,
+    title: string,
+    body: string,
+    labels?: string[]
+  ): Promise<CreatedIssue> {
+    const response = await fetch(`${this.baseUrl}/repos/${owner}/${repo}/issues`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        title,
+        body,
+        labels: labels || []
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`GitHub API error (${response.status}): ${errorData.message || response.statusText}`);
+    }
+
+    const issueData = await response.json();
+
+    return {
+      number: issueData.number,
+      title: issueData.title,
+      url: issueData.html_url,
+      subtaskId: '' // Not applicable for single issues
+    };
   }
 }
 

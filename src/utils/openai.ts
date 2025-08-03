@@ -195,6 +195,56 @@ export class OpenAIClient {
     }
   }
 
+  /**
+   * Split a large subtask into smaller ones using OpenAI
+   */
+  async splitSubtask(subtask: Subtask): Promise<Omit<Subtask, 'id' | 'order'>[]> {
+    try {
+      const prompt = this.buildSplitPrompt(subtask);
+
+      const response = await fetch(`${this.baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        signal: AbortSignal.timeout(15000),
+        body: JSON.stringify({
+          model: 'gpt-3.5-turbo',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are an expert software engineer. Split large tasks into smaller, atomic tasks that can each be completed in under 2 hours. Each split task should be independently completable and affect only a single component or file.'
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          max_tokens: 2000,
+          temperature: 0.5,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content;
+
+      if (!content) {
+        throw new Error('No split content received from OpenAI API');
+      }
+
+      return this.parseSplitResponse(content, subtask);
+
+    } catch (error) {
+      console.warn('OpenAI split failed, using fallback:', error);
+      return this.getFallbackSplit(subtask);
+    }
+  }
+
   // PRIVATE HELPER METHODS
 
   private buildClarificationPrompt(issue: { issueTitle: string; issueBody: string }): string {
@@ -785,6 +835,106 @@ Generate 5-15 subtasks that cover the entire execution plan in proper dependency
       ...task
     }));
   }
+
+  /**
+   * Build prompt for task splitting
+   */
+  private buildSplitPrompt(subtask: Subtask): string {
+    return `Split this large task into 2-4 smaller, atomic tasks. Each task should be completable in under 2 hours and affect only a single component or file.
+
+**ORIGINAL TASK:**
+Title: ${subtask.title}
+Description: ${subtask.description}
+Estimated Hours: ${subtask.estimatedHours}
+Current Acceptance Criteria: ${subtask.acceptanceCriteria.join(', ')}
+
+**SPLITTING REQUIREMENTS:**
+- Create 2-4 smaller tasks that together accomplish the original task
+- Each task should be independently completable
+- Each task should affect only one component/file
+- Total estimated hours should not exceed original (${subtask.estimatedHours}h)
+- Maintain logical sequence and dependencies
+- Preserve the original guardrails for each split task
+
+**FORMAT:**
+Return ONLY a JSON array of split tasks:
+
+[
+  {
+    "title": "Specific task title",
+    "description": "Detailed description",
+    "acceptanceCriteria": ["criteria 1", "criteria 2"],
+    "estimatedHours": 2
+  }
+]
+
+Split the task now:`;
+  }
+
+  /**
+   * Parse split response from OpenAI
+   */
+  private parseSplitResponse(content: string, originalTask: Subtask): Omit<Subtask, 'id' | 'order'>[] {
+    try {
+      const jsonMatch = content.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) {
+        throw new Error('No JSON array found');
+      }
+
+      const splitTasks = JSON.parse(jsonMatch[0]);
+
+      return splitTasks.map((task: any) => ({
+        title: String(task.title || '').trim(),
+        description: String(task.description || '').trim(),
+        acceptanceCriteria: Array.isArray(task.acceptanceCriteria)
+          ? task.acceptanceCriteria.map((c: any) => String(c).trim())
+          : ['Task completed successfully'],
+        guardrails: originalTask.guardrails, // Inherit original guardrails
+        estimatedHours: Math.min(Math.max(Number(task.estimatedHours) || 1, 1), 4),
+        isTooBig: false, // Split tasks should not be too big
+        tags: originalTask.tags, // Inherit original tags
+        dependsOn: originalTask.dependsOn, // Inherit dependencies
+        prerequisiteTaskIds: originalTask.prerequisiteTaskIds
+      }));
+
+    } catch (error) {
+      console.warn('Failed to parse split response:', error);
+      return this.getFallbackSplit(originalTask);
+    }
+  }
+
+  /**
+   * Fallback split when AI fails
+   */
+  private getFallbackSplit(originalTask: Subtask): Omit<Subtask, 'id' | 'order'>[] {
+    const halfHours = Math.ceil(originalTask.estimatedHours / 2);
+    const halfCriteria = Math.ceil(originalTask.acceptanceCriteria.length / 2);
+
+    return [
+      {
+        title: `${originalTask.title} - Setup & Foundation`,
+        description: `Initial setup and foundation work for: ${originalTask.description}`,
+        acceptanceCriteria: originalTask.acceptanceCriteria.slice(0, halfCriteria),
+        guardrails: originalTask.guardrails,
+        estimatedHours: halfHours,
+        isTooBig: false,
+        tags: [...originalTask.tags, 'setup'],
+        dependsOn: originalTask.dependsOn,
+        prerequisiteTaskIds: originalTask.prerequisiteTaskIds
+      },
+      {
+        title: `${originalTask.title} - Implementation & Testing`,
+        description: `Complete implementation and testing for: ${originalTask.description}`,
+        acceptanceCriteria: originalTask.acceptanceCriteria.slice(halfCriteria),
+        guardrails: originalTask.guardrails,
+        estimatedHours: originalTask.estimatedHours - halfHours,
+        isTooBig: false,
+        tags: [...originalTask.tags, 'implementation'],
+        dependsOn: originalTask.dependsOn,
+        prerequisiteTaskIds: originalTask.prerequisiteTaskIds
+      }
+    ];
+  }
 }
 
 // STANDALONE FUNCTIONS
@@ -845,4 +995,19 @@ export async function generateSubtasks(
 
   const client = new OpenAIClient(config.apiKey);
   return client.generateSubtasks(plan);
+}
+
+/**
+ * Split a large subtask into smaller ones (standalone function)
+ */
+export async function splitSubtask(
+  config: { apiKey: string },
+  subtask: Subtask
+): Promise<Omit<Subtask, 'id' | 'order'>[]> {
+  if (!config.apiKey) {
+    throw new Error('OpenAI API key is required');
+  }
+
+  const client = new OpenAIClient(config.apiKey);
+  return client.splitSubtask(subtask);
 }

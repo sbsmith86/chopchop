@@ -1,23 +1,38 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { CreatedIssue } from '../types';
+import { CreatedIssue, IssueCreationProgress } from '../types';
 import { GitHubClient } from '../utils/github';
+import { IssueCreationProgressComponent } from './IssueCreationProgressComponent';
+import { CompletionScreen } from './CompletionScreen';
 
 /**
  * Summary and approval panel component
- * Final review before creating GitHub issues
+ * Final review before creating GitHub issues with progress tracking
  */
 export const SummaryApprovalPanel: React.FC = () => {
   const { state, setError, setLoading, resetState } = useAppContext();
   const [createdIssues, setCreatedIssues] = useState<CreatedIssue[]>([]);
   const [isCreating, setIsCreating] = useState(false);
+  const [showCompletion, setShowCompletion] = useState(false);
+  const [progress, setProgress] = useState<IssueCreationProgress | null>(null);
 
   /**
-   * Create GitHub issues from subtasks
+   * Handle progress updates during issue creation
+   */
+  const handleProgress = (progressUpdate: IssueCreationProgress) => {
+    setProgress(progressUpdate);
+
+    if (progressUpdate.status === 'completed' && progressUpdate.createdIssue) {
+      setCreatedIssues(prev => [...prev, progressUpdate.createdIssue!]);
+    }
+  };
+
+  /**
+   * Create GitHub issues from subtasks with progress tracking
    */
   const handleCreateIssues = async () => {
-    if (!state.config || !state.subtasks.length) {
-      setError('Configuration and subtasks are required');
+    if (!state.config?.githubPat || !state.config?.githubRepo || !state.subtasks.length) {
+      setError('GitHub configuration and subtasks are required');
       return;
     }
 
@@ -32,10 +47,19 @@ export const SummaryApprovalPanel: React.FC = () => {
     setIsCreating(true);
     setLoading(true);
     setError(null);
+    setCreatedIssues([]);
+    setShowCompletion(false);
+
+    // Set initial progress immediately
+    setProgress({
+      currentIssue: 0,
+      totalIssues: state.subtasks.length,
+      currentTask: 'Initializing GitHub issue creation...',
+      status: 'creating'
+    });
 
     try {
       const githubClient = new GitHubClient(state.config.githubPat);
-
       const parentTitle = state.issue?.title || 'Decomposed Issue';
       const parentUrl = state.issue?.url;
 
@@ -44,16 +68,19 @@ export const SummaryApprovalPanel: React.FC = () => {
         repo,
         state.subtasks,
         parentTitle,
-        parentUrl
+        parentUrl,
+        handleProgress
       );
 
       setCreatedIssues(created);
+      setShowCompletion(true);
       setError(null);
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to create GitHub issues');
     } finally {
       setIsCreating(false);
       setLoading(false);
+      setProgress(null);
     }
   };
 
@@ -102,6 +129,53 @@ ${task.isTooBig ? '⚠️ **Warning:** This task may be too large and should be 
     URL.revokeObjectURL(url);
   };
 
+  /**
+   * Start a new decomposition process
+   */
+  const handleStartNew = () => {
+    setShowCompletion(false);
+    setCreatedIssues([]);
+    setProgress(null);
+    resetState();
+  };
+
+  // Show completion screen if issues were created successfully
+  if (showCompletion && createdIssues.length > 0) {
+    return (
+      <CompletionScreen
+        createdIssues={createdIssues}
+        subtasks={state.subtasks}
+        repositoryUrl={state.config?.githubRepo || ''}
+        onStartNew={handleStartNew}
+        onExportSummary={exportAsMarkdown}
+      />
+    );
+  }
+
+  // Debugging output
+  console.log('SummaryApprovalPanel render state:', {
+    isCreating,
+    progress,
+    showCompletion,
+    createdIssuesCount: createdIssues.length
+  });
+
+  // Show progress if currently creating issues
+  if (isCreating && progress) {
+    console.log('Showing progress component');
+    return (
+      <div className="p-8">
+        <div className="max-w-2xl mx-auto">
+          <IssueCreationProgressComponent
+            progress={progress}
+            createdIssues={createdIssues}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Show main summary and approval interface
   return (
     <div className="p-8">
       <div className="max-w-3xl mx-auto">
@@ -257,47 +331,8 @@ ${task.isTooBig ? '⚠️ **Warning:** This task may be too large and should be 
           </div>
         )}
 
-        {/* Created Issues */}
-        {createdIssues.length > 0 && (
-          <div className="mb-8 p-6 bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-400 rounded-xl">
-            <div className="flex items-start space-x-3">
-              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <span className="text-green-600">🎉</span>
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold text-green-800 mb-4">
-                  Successfully Created Issues
-                </h3>
-                <div className="space-y-3">
-                  {createdIssues.map((issue) => (
-                    <div key={issue.number} className="flex items-center justify-between p-3 bg-white rounded-lg border border-green-200">
-                      <div className="flex items-center space-x-3">
-                        <span className="inline-flex items-center justify-center w-8 h-8 bg-green-100 text-green-600 rounded-full text-sm font-bold">
-                          #{issue.number}
-                        </span>
-                        <span className="text-base font-medium text-green-800">
-                          {issue.title}
-                        </span>
-                      </div>
-                      <a
-                        href={issue.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center px-3 py-1 text-sm font-medium text-green-700 bg-green-100 rounded-lg hover:bg-green-200 transition-colors"
-                      >
-                        <span className="mr-1">🔗</span>
-                        View Issue
-                      </a>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Warnings */}
-        {state.subtasks.some(task => task.isTooBig) && createdIssues.length === 0 && (
+        {state.subtasks.some(task => task.isTooBig) && (
           <div className="mb-8 p-6 bg-gradient-to-r from-orange-50 to-yellow-50 border-l-4 border-orange-400 rounded-xl">
             <div className="flex items-start space-x-3">
               <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -316,46 +351,37 @@ ${task.isTooBig ? '⚠️ **Warning:** This task may be too large and should be 
           </div>
         )}
 
-        {/* Actions */}
-        <div className="flex items-center justify-between pt-6 border-t border-gray-200">
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <button
             onClick={exportAsMarkdown}
-            className="inline-flex items-center px-6 py-3 text-base font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all shadow-sm"
+            className="inline-flex items-center px-6 py-3 text-base font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm"
           >
-            <span className="mr-2">📥</span>
+            <span className="mr-2">📄</span>
             Export as Markdown
           </button>
 
-          {createdIssues.length === 0 ? (
-            <button
-              onClick={handleCreateIssues}
-              disabled={
-                !state.config ||
-                !state.subtasks.length ||
-                isCreating
-              }
-              className="inline-flex items-center px-6 py-3 text-base font-semibold text-white bg-gradient-to-r from-emerald-500 to-green-600 border border-transparent rounded-xl hover:from-emerald-600 hover:to-green-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transition-all"
-            >
-              {isCreating ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                  Creating Issues...
-                </>
-              ) : (
-                <>
-                  <span className="mr-2">🚀</span>
-                  Create {state.subtasks.length} GitHub Issues
-                </>
-              )}
-            </button>
-          ) : (
-            <div className="flex items-center space-x-2 text-green-600 font-semibold">
-              <span className="text-lg">🎉</span>
-              <span>All issues created successfully!</span>
-            </div>
-          )}
+
+
+          <button
+            onClick={handleCreateIssues}
+            disabled={isCreating || !state.config?.githubPat || !state.config?.githubRepo || state.subtasks.length === 0}
+            className="inline-flex items-center px-6 py-3 text-base font-semibold text-white bg-gradient-to-r from-emerald-500 to-green-600 border border-transparent rounded-xl hover:from-emerald-600 hover:to-green-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transition-all"
+          >
+            {isCreating ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                Creating Issues...
+              </>
+            ) : (
+              <>
+                <span className="mr-2">🚀</span>
+                Create {state.subtasks.length} GitHub Issues
+              </>
+            )}
+          </button>
         </div>
       </div>
     </div>
   );
-}
+};
