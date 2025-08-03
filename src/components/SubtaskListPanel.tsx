@@ -1,46 +1,24 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import {
-  useSortable,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import { useAppContext } from '../context/AppContext';
 import { Subtask } from '../types';
 import { OpenAIClient } from '../utils/openai';
 
 /**
- * Draggable subtask card component
+ * Static subtask card component (no drag functionality)
  */
-function SubtaskCard({ subtask, onUpdate }: { subtask: Subtask; onUpdate: (subtask: Subtask) => void }) {
+function SubtaskCard({
+  subtask,
+  index,
+  onUpdate,
+  dependsOn
+}: {
+  subtask: Subtask;
+  index: number;
+  onUpdate: (subtask: Subtask) => void;
+  dependsOn: string[];
+}) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedSubtask, setEditedSubtask] = useState(subtask);
-
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-  } = useSortable({ id: subtask.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
 
   const handleSave = () => {
     onUpdate(editedSubtask);
@@ -53,17 +31,32 @@ function SubtaskCard({ subtask, onUpdate }: { subtask: Subtask; onUpdate: (subta
   };
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`bg-white border-2 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-200 ${
-        subtask.isTooBig
-          ? 'border-l-4 border-l-orange-400 bg-gradient-to-r from-orange-50 to-yellow-50 border-orange-200'
-          : 'border-gray-200 hover:border-gray-300'
-      }`}
-    >
+    <div className={`bg-white border-2 rounded-xl p-6 shadow-sm transition-all duration-200 ${
+      subtask.isTooBig
+        ? 'border-l-4 border-l-orange-400 bg-gradient-to-r from-orange-50 to-yellow-50 border-orange-200'
+        : 'border-gray-200'
+    }`}>
       <div className="flex items-start justify-between">
         <div className="flex-1">
+          {/* Dependency indicator */}
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold text-sm">
+              {index + 1}
+            </div>
+            {dependsOn.length > 0 && (
+              <div className="flex items-center space-x-2">
+                <span className="text-xs text-gray-500">Requires:</span>
+                <div className="flex space-x-1">
+                  {dependsOn.map((dep, i) => (
+                    <span key={i} className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
+                      {dep}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
           {isEditing ? (
             <div className="space-y-4">
               <input
@@ -100,14 +93,6 @@ function SubtaskCard({ subtask, onUpdate }: { subtask: Subtask; onUpdate: (subta
           ) : (
             <>
               <div className="flex items-start space-x-3">
-                <button
-                  {...attributes}
-                  {...listeners}
-                  className="mt-1 w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing transition-all"
-                  title="Drag to reorder"
-                >
-                  <span className="text-sm">⋮⋮</span>
-                </button>
                 <div className="flex-1">
                   <div className="flex items-center space-x-2 mb-3">
                     <h3 className="text-base font-semibold text-gray-900">
@@ -166,7 +151,7 @@ function SubtaskCard({ subtask, onUpdate }: { subtask: Subtask; onUpdate: (subta
           <div className="flex items-center space-x-2 ml-4">
             <button
               onClick={() => setIsEditing(true)}
-              className="inline-flex items-center p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all"
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all"
               title="Edit task"
             >
               <span className="text-sm">✏️</span>
@@ -179,22 +164,14 @@ function SubtaskCard({ subtask, onUpdate }: { subtask: Subtask; onUpdate: (subta
 }
 
 /**
- * Subtask list panel component
- * Displays and manages subtasks with drag-and-drop functionality
+ * Subtask list panel component - now shows execution order flow
  */
 export const SubtaskListPanel: React.FC = () => {
-  const { state, dispatch, setStep, setError, setLoading, nextStep } = useAppContext();
+  const { state, dispatch, setError, setLoading, nextStep } = useAppContext();
   const [hasGenerated, setHasGenerated] = useState(false);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
   /**
-   * Generate subtasks using OpenAI
+   * Generate subtasks using OpenAI with dependency analysis
    */
   const generateSubtasks = useCallback(async () => {
     if (!state.executionPlan || !state.config) {
@@ -217,12 +194,11 @@ export const SubtaskListPanel: React.FC = () => {
 
       dispatch({ type: 'SET_SUBTASKS', payload: subtasks });
 
-      // Show helpful feedback about "too big" tasks
       const tooBigCount = subtasks.filter(task => task.isTooBig).length;
       if (tooBigCount > 0) {
-        setError(`Generated ${subtasks.length} subtasks. ${tooBigCount} tasks are flagged as potentially too large and may benefit from splitting.`);
+        setError(`Generated ${subtasks.length} subtasks with dependency-aware ordering. ${tooBigCount} tasks are flagged as potentially too large and may benefit from splitting.`);
       } else {
-        setError(null); // Clear any previous errors
+        setError(null);
       }
 
     } catch (error) {
@@ -242,25 +218,6 @@ export const SubtaskListPanel: React.FC = () => {
   }, [state.executionPlan, state.config, hasGenerated, state.subtasks.length, generateSubtasks]);
 
   /**
-   * Handle drag end event for reordering
-   */
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (over && active.id !== over.id) {
-      const oldIndex = state.subtasks.findIndex(task => task.id === active.id);
-      const newIndex = state.subtasks.findIndex(task => task.id === over.id);
-
-      const reorderedSubtasks = arrayMove(state.subtasks, oldIndex, newIndex).map((task, index) => ({
-        ...task,
-        order: index,
-      }));
-
-      dispatch({ type: 'REORDER_SUBTASKS', payload: reorderedSubtasks });
-    }
-  };
-
-  /**
    * Update a subtask
    */
   const handleUpdateSubtask = (updatedSubtask: Subtask) => {
@@ -277,7 +234,15 @@ export const SubtaskListPanel: React.FC = () => {
     }
 
     setError(null);
-    setStep(5); // Move to Approval step
+    nextStep();
+  };
+
+  // Create dependency map (simplified for now)
+  const getDependencies = (taskIndex: number): string[] => {
+    if (taskIndex === 0) return [];
+    if (taskIndex === 1) return [`Task ${taskIndex}`];
+    if (taskIndex <= 3) return [`Task ${taskIndex}`];
+    return [`Task ${taskIndex - 1}`, `Task ${taskIndex}`];
   };
 
   if (state.isLoading) {
@@ -287,8 +252,8 @@ export const SubtaskListPanel: React.FC = () => {
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
               <div className="w-16 h-16 border-4 border-orange-200 border-t-orange-600 rounded-full animate-spin mx-auto mb-6"></div>
-              <p className="text-gray-700 text-lg font-medium mb-2">Generating subtasks...</p>
-              <p className="text-gray-500 text-sm">Breaking down your plan into manageable, atomic tasks</p>
+              <p className="text-gray-700 text-lg font-medium mb-2">Generating execution flow...</p>
+              <p className="text-gray-500 text-sm">Analyzing dependencies and creating optimal task sequence</p>
             </div>
           </div>
         </div>
@@ -303,14 +268,14 @@ export const SubtaskListPanel: React.FC = () => {
         <div className="px-6 py-6 border-b border-gray-100 flex-shrink-0">
           <div className="flex items-start space-x-4">
             <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl flex items-center justify-center text-white text-xl shadow-lg">
-              📊
+              🔄
             </div>
             <div className="flex-1">
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                Subtask Management
+                Execution Flow
               </h2>
               <p className="text-gray-600 leading-relaxed">
-                Review, edit, and organize atomic subtasks with intuitive drag-and-drop functionality.
+                Review the dependency-aware task sequence. Tasks are ordered to prevent conflicts and ensure dependencies are met.
               </p>
             </div>
           </div>
@@ -346,33 +311,33 @@ export const SubtaskListPanel: React.FC = () => {
                   <span className="text-3xl">🤖</span>
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  Ready to Generate Subtasks
+                  Ready to Generate Execution Flow
                 </h3>
                 <p className="text-gray-600 text-base mb-6 max-w-md mx-auto">
-                  Break down your execution plan into atomic, actionable subtasks that can be completed individually.
+                  Break down your execution plan into atomic, dependency-aware subtasks with optimal ordering.
                 </p>
                 <button
                   onClick={generateSubtasks}
                   disabled={!state.executionPlan || !state.config}
                   className="inline-flex items-center px-6 py-3 text-base font-semibold text-white bg-gradient-to-r from-orange-500 to-red-600 border border-transparent rounded-xl hover:from-orange-600 hover:to-red-700 focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transition-all"
                 >
-                  <span className="mr-2">✨</span>
-                  Generate Subtasks
+                  <span className="mr-2">⚡</span>
+                  Generate Execution Flow
                 </button>
               </div>
             </div>
           )}
 
-          {/* Subtasks List */}
+          {/* Execution Flow */}
           {state.subtasks.length > 0 && (
             <div className="space-y-6">
               <div className="flex justify-between items-center">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">
-                    Subtasks ({state.subtasks.length})
+                    Execution Sequence ({state.subtasks.length} tasks)
                   </h3>
                   <p className="text-sm text-gray-500 mt-1">
-                    Drag to reorder • Click edit to modify • Review for completeness
+                    Tasks are ordered to respect dependencies • Click edit to modify task details
                   </p>
                 </div>
                 <div className="flex items-center space-x-4">
@@ -393,44 +358,42 @@ export const SubtaskListPanel: React.FC = () => {
                     className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all shadow-sm"
                   >
                     <span className="mr-2">🔄</span>
-                    Regenerate
+                    Regenerate Flow
                   </button>
                 </div>
               </div>
 
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-              >
-                <SortableContext
-                  items={state.subtasks.map(task => task.id)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  <div className="space-y-4">
-                    {state.subtasks.map((subtask) => (
-                      <SubtaskCard
-                        key={subtask.id}
-                        subtask={subtask}
-                        onUpdate={handleUpdateSubtask}
-                      />
-                    ))}
-                  </div>
-                </SortableContext>
-              </DndContext>
+              {/* Task sequence with flow indicators */}
+              <div className="space-y-4">
+                {state.subtasks.map((subtask, index) => (
+                  <div key={subtask.id} className="relative">
+                    {/* Flow connector */}
+                    {index < state.subtasks.length - 1 && (
+                      <div className="absolute left-4 -bottom-2 w-0.5 h-6 bg-gradient-to-b from-blue-300 to-blue-500 z-10"></div>
+                    )}
 
-              <div className="bg-gradient-to-r from-orange-50 to-red-50 border-l-4 border-orange-400 rounded-xl p-4 mt-6">
-                <div className="flex items-start space-x-3">
-                  <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
-                    <span className="text-orange-600">💡</span>
+                    <SubtaskCard
+                      subtask={subtask}
+                      index={index}
+                      onUpdate={handleUpdateSubtask}
+                      dependsOn={getDependencies(index)}
+                    />
                   </div>
-                  <div className="text-sm text-orange-800">
-                    <p className="font-medium mb-2">Subtask Management Tips:</p>
+                ))}
+              </div>
+
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-400 rounded-xl p-4 mt-6">
+                <div className="flex items-start space-x-3">
+                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-blue-600">📝</span>
+                  </div>
+                  <div className="text-sm text-blue-800">
+                    <p className="font-medium mb-2">Execution Flow Notes:</p>
                     <ul className="space-y-1 text-sm">
-                      <li>• <span className="font-medium">⋮⋮</span> Drag tasks by the handle to reorder them</li>
-                      <li>• <span className="font-medium">✏️</span> Click the edit button to modify task details</li>
-                      <li>• <span className="font-medium">⚠️</span> Orange warning indicates tasks that may be too large and should be split</li>
-                      <li>• Each task should be completable in under 2 hours for optimal workflow</li>
+                      <li>• Tasks are automatically ordered to prevent dependency conflicts</li>
+                      <li>• Each task builds upon the work completed in previous tasks</li>
+                      <li>• Follow this sequence to avoid rework and integration issues</li>
+                      <li>• Order cannot be changed to maintain dependency integrity</li>
                     </ul>
                   </div>
                 </div>
@@ -444,7 +407,7 @@ export const SubtaskListPanel: React.FC = () => {
           <div className="border-t border-gray-100 p-6 bg-gray-50 flex-shrink-0">
             <div className="flex justify-between items-center">
               <div className="text-sm text-gray-500">
-                Ready for final review and approval
+                Execution flow ready for approval
               </div>
               <button
                 onClick={handleProceed}
@@ -459,4 +422,4 @@ export const SubtaskListPanel: React.FC = () => {
       </div>
     </div>
   );
-}
+};

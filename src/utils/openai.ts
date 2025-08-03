@@ -498,13 +498,20 @@ ${answeredQuestions || 'No additional clarifications provided'}
   }
 
   /**
-   * Builds prompt for subtask generation
+   * Builds prompt for subtask generation with dependency analysis
    */
   private buildSubtaskPrompt(plan: ExecutionPlan): string {
-    return `Break down this execution plan into atomic, actionable subtasks. Each subtask should be completable in under 2 hours and affect only a single component or file.
+    return `Break down this execution plan into atomic, actionable subtasks with proper dependency ordering. Each subtask should be completable in under 2 hours and affect only a single component or file.
 
 **EXECUTION PLAN:**
 ${plan.content}
+
+**DEPENDENCY ORDERING REQUIREMENTS:**
+- Analyze what each task needs from previous tasks to succeed
+- Order tasks so dependencies are always completed first
+- Foundation/setup tasks must come before implementation tasks
+- Testing tasks must come after their implementation tasks
+- Documentation tasks should come after implementation is stable
 
 **REQUIREMENTS FOR EACH SUBTASK:**
 - Title: Clear, specific action (e.g., "Create UserService class with email validation")
@@ -513,6 +520,8 @@ ${plan.content}
 - Guardrails: 2-4 rules to prevent scope creep or breaking existing functionality
 - Estimated Hours: Realistic time estimate (1-8 hours, prefer 1-4)
 - Tags: 2-3 relevant tags for categorization
+- DependsOn: List of prerequisite task titles (what must be done first)
+- PrerequisiteTaskIds: Will be populated after ordering
 
 **ATOMICITY RULES:**
 - Each task should have ONE primary action
@@ -521,8 +530,15 @@ ${plan.content}
 - Testing tasks should be separate from implementation tasks
 - Documentation tasks should be separate from coding tasks
 
+**DEPENDENCY ANALYSIS:**
+- Database/model changes come before API changes
+- API endpoints come before frontend integration
+- Core utilities come before features that use them
+- Authentication/security comes before features that need it
+- Configuration/setup comes before anything that depends on it
+
 **FORMAT:**
-Return ONLY a JSON array of subtasks in this exact format:
+Return ONLY a JSON array of subtasks in dependency order:
 
 [
   {
@@ -539,11 +555,12 @@ Return ONLY a JSON array of subtasks in this exact format:
       "Write unit tests for new functions"
     ],
     "estimatedHours": 3,
-    "tags": ["implementation", "backend"]
+    "tags": ["implementation", "backend"],
+    "dependsOn": ["Previous task title if any"]
   }
 ]
 
-Generate 5-15 subtasks that cover the entire execution plan systematically.`;
+Generate 5-15 subtasks that cover the entire execution plan in proper dependency order.`;
   }
 
   /**

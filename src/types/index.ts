@@ -57,6 +57,8 @@ export interface Subtask {
   order: number;
   isTooBig: boolean;
   tags: string[];
+  dependsOn: string[]; // Add dependency tracking
+  prerequisiteTaskIds: string[]; // IDs of tasks that must complete first
 }
 
 export interface AppConfig {

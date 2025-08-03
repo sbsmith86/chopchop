@@ -27,7 +27,6 @@ type AppAction =
   | { type: 'SET_SUBTASKS'; payload: Subtask[] }
   | { type: 'UPDATE_SUBTASK'; payload: Subtask }
   | { type: 'DELETE_SUBTASK'; payload: string }
-  | { type: 'REORDER_SUBTASKS'; payload: Subtask[] }
   | { type: 'SET_CREATED_ISSUES'; payload: CreatedIssue[] }
   | { type: 'SET_CONFIG'; payload: Partial<AppConfig> }
   | { type: 'UPDATE_CONFIG'; payload: Partial<AppConfig> }
@@ -66,8 +65,6 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
         ...state,
         subtasks: state.subtasks.filter(task => task.id !== action.payload)
       };
-    case 'REORDER_SUBTASKS':
-      return { ...state, subtasks: action.payload };
     case 'SET_CREATED_ISSUES':
       return { ...state, createdIssues: action.payload };
     case 'SET_CONFIG':
