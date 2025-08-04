@@ -9,9 +9,10 @@ import { OpenAIClient } from '../utils/openai';
  * Allows users to review and edit the generated execution plan
  */
 export const PlanReviewEditor: React.FC = () => {
-  const { state, dispatch, setError, setLoading, nextStep } = useAppContext();
+  const { state, dispatch, setError, setLoading, nextStep, saveCurrentPlan } = useAppContext();
   const [planContent, setPlanContent] = useState('');
   const [hasGenerated, setHasGenerated] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   /**
    * Generate execution plan using OpenAI
@@ -51,7 +52,7 @@ export const PlanReviewEditor: React.FC = () => {
   /**
    * Save the edited plan and proceed
    */
-  const handleSaveAndProceed = () => {
+  const handleSaveAndProceed = async () => {
     console.log('PlanReviewEditor: handleSaveAndProceed called');
     console.log('Current state:', {
       currentStep: state.currentStep,
@@ -64,29 +65,82 @@ export const PlanReviewEditor: React.FC = () => {
       return;
     }
 
-    // Create the updated execution plan with proper structure
-    const updatedPlan: ExecutionPlan = {
-      id: state.executionPlan?.id || Date.now().toString(),
-      title: state.executionPlan?.title || `Execution Plan: ${state.issue?.title}`,
-      description: state.executionPlan?.description || 'User-edited execution plan',
-      content: planContent,
-      steps: state.executionPlan?.steps || [],
-      createdAt: state.executionPlan?.createdAt || new Date(),
-      updatedAt: new Date()
-    };
+    setIsSaving(true);
 
-    console.log('Saving execution plan:', updatedPlan);
+    try {
+      // Create the updated execution plan with proper structure
+      const updatedPlan: ExecutionPlan = {
+        id: state.executionPlan?.id || Date.now().toString(),
+        title: state.executionPlan?.title || `Execution Plan: ${state.issue?.title}`,
+        description: state.executionPlan?.description || 'User-edited execution plan',
+        content: planContent,
+        steps: state.executionPlan?.steps || [],
+        createdAt: state.executionPlan?.createdAt || new Date(),
+        updatedAt: new Date()
+      };
 
-    // Save the plan to state
-    dispatch({ type: 'SET_EXECUTION_PLAN', payload: updatedPlan });
+      console.log('Saving execution plan:', updatedPlan);
 
-    // Clear any existing subtasks since we're updating the plan
-    dispatch({ type: 'SET_SUBTASKS', payload: [] });
+      // Save the plan to state
+      dispatch({ type: 'SET_EXECUTION_PLAN', payload: updatedPlan });
 
-    setError(null);
+      // Save to local storage
+      await saveCurrentPlan(updatedPlan.title, updatedPlan.description);
 
-    console.log('Calling nextStep() - current step:', state.currentStep);
-    nextStep();
+      // Clear any existing subtasks since we're updating the plan
+      dispatch({ type: 'SET_SUBTASKS', payload: [] });
+
+      setError(null);
+
+      console.log('Calling nextStep() - current step:', state.currentStep);
+      nextStep();
+    } catch (error) {
+      console.error('Failed to save plan:', error);
+      setError('Failed to save execution plan');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  /**
+   * Save plan without proceeding
+   */
+  const handleSavePlan = async () => {
+    if (!planContent.trim()) {
+      setError('Please enter or generate an execution plan before saving');
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      // Create the updated execution plan with proper structure
+      const updatedPlan: ExecutionPlan = {
+        id: state.executionPlan?.id || Date.now().toString(),
+        title: state.executionPlan?.title || `Execution Plan: ${state.issue?.title}`,
+        description: state.executionPlan?.description || 'User-edited execution plan',
+        content: planContent,
+        steps: state.executionPlan?.steps || [],
+        createdAt: state.executionPlan?.createdAt || new Date(),
+        updatedAt: new Date()
+      };
+
+      // Save the plan to state
+      dispatch({ type: 'SET_EXECUTION_PLAN', payload: updatedPlan });
+
+      // Save to local storage
+      await saveCurrentPlan(updatedPlan.title, updatedPlan.description);
+
+      setError(null);
+      
+      // Show a brief success message or indicator
+      console.log('Plan saved successfully');
+    } catch (error) {
+      console.error('Failed to save plan:', error);
+      setError('Failed to save execution plan');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   /**
@@ -248,14 +302,28 @@ export const PlanReviewEditor: React.FC = () => {
               <div className="text-sm text-gray-500">
                 Ready to break down into subtasks
               </div>
-              <button
-                onClick={handleSaveAndProceed}
-                disabled={!planContent.trim()}
-                className="inline-flex items-center px-6 py-3 text-base font-semibold text-white bg-gradient-to-r from-blue-500 to-indigo-600 border border-transparent rounded-xl hover:from-blue-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transition-all"
-              >
-                <span className="mr-2">🚀</span>
-                Save Plan & Generate Subtasks
-              </button>
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={handleSavePlan}
+                  disabled={!planContent.trim() || isSaving}
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+                >
+                  {isSaving ? (
+                    <span className="mr-2">⏳</span>
+                  ) : (
+                    <span className="mr-2">💾</span>
+                  )}
+                  {isSaving ? 'Saving...' : 'Save Plan'}
+                </button>
+                <button
+                  onClick={handleSaveAndProceed}
+                  disabled={!planContent.trim() || isSaving}
+                  className="inline-flex items-center px-6 py-3 text-base font-semibold text-white bg-gradient-to-r from-blue-500 to-indigo-600 border border-transparent rounded-xl hover:from-blue-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transition-all"
+                >
+                  <span className="mr-2">🚀</span>
+                  Save & Generate Subtasks
+                </button>
+              </div>
             </div>
           </div>
         )}

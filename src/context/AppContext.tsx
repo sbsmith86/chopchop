@@ -1,6 +1,19 @@
 import React, { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
 import { AppState, AppStep, GitHubIssue, ClarificationQuestion, ExecutionPlan, Subtask, CreatedIssue, AppConfig, IssueCreationProgress } from '../types';
-import { saveConfig, loadConfig, exportConfig as exportConfigFile, importConfig as importConfigFile } from '../utils/storage';
+import { 
+  saveConfig, 
+  loadConfig, 
+  exportConfig as exportConfigFile, 
+  importConfig as importConfigFile,
+  loadSavedPlans,
+  savePlan,
+  deletePlan,
+  renamePlan,
+  exportPlanAsJson,
+  exportPlanAsMarkdown,
+  importPlanFromJson,
+  clearAllPlans
+} from '../utils/storage';
 
 const initialState: AppState = {
   currentStep: 1,
@@ -22,7 +35,8 @@ const initialState: AppState = {
   error: null,
   isCreating: false,
   creationProgress: null,
-  showCompletion: false
+  showCompletion: false,
+  savedPlans: []
 };
 
 type AppAction =
@@ -45,7 +59,12 @@ type AppAction =
   | { type: 'SET_CREATION_PROGRESS'; payload: IssueCreationProgress | null }
   | { type: 'SET_CREATED_ISSUES'; payload: CreatedIssue[] }
   | { type: 'SET_SHOW_COMPLETION'; payload: boolean }
-  | { type: 'HIDE_COMPLETION' };
+  | { type: 'HIDE_COMPLETION' }
+  | { type: 'LOAD_SAVED_PLANS'; payload: ExecutionPlan[] }
+  | { type: 'ADD_SAVED_PLAN'; payload: ExecutionPlan }
+  | { type: 'UPDATE_SAVED_PLAN'; payload: ExecutionPlan }
+  | { type: 'REMOVE_SAVED_PLAN'; payload: string }
+  | { type: 'CLEAR_ALL_SAVED_PLANS' };
 
 const appReducer = (state: AppState, action: AppAction): AppState => {
   console.log("reducer called. action: ", action.type, action.payload);
@@ -143,6 +162,30 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
 
     case 'HIDE_COMPLETION':
       return { ...state, showCompletion: false };
+    
+    case 'LOAD_SAVED_PLANS':
+      return { ...state, savedPlans: action.payload };
+    
+    case 'ADD_SAVED_PLAN':
+      return { 
+        ...state, 
+        savedPlans: [...state.savedPlans, action.payload]
+      };
+    
+    case 'UPDATE_SAVED_PLAN': {
+      const updatedPlans = state.savedPlans.map(plan => 
+        plan.id === action.payload.id ? action.payload : plan
+      );
+      return { ...state, savedPlans: updatedPlans };
+    }
+    
+    case 'REMOVE_SAVED_PLAN': {
+      const filteredPlans = state.savedPlans.filter(plan => plan.id !== action.payload);
+      return { ...state, savedPlans: filteredPlans };
+    }
+    
+    case 'CLEAR_ALL_SAVED_PLANS':
+      return { ...state, savedPlans: [] };
 
     default:
       return state;
@@ -160,6 +203,15 @@ interface AppContextType {
   updateConfig: (config: Partial<AppConfig>) => void;
   exportConfig: () => void;
   importConfig: (file: File) => Promise<void>;
+  // Plan management methods
+  saveCurrentPlan: (title?: string, description?: string) => Promise<void>;
+  loadPlan: (planId: string) => void;
+  deleteSavedPlan: (planId: string) => void;
+  renameSavedPlan: (planId: string, newTitle: string, newDescription?: string) => void;
+  exportPlanJson: (plan: ExecutionPlan) => void;
+  exportPlanMarkdown: (plan: ExecutionPlan) => void;
+  importPlan: (file: File) => Promise<void>;
+  clearAllSavedPlans: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -173,6 +225,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (savedConfig) {
       dispatch({ type: 'LOAD_CONFIG', payload: savedConfig });
     }
+    
+    // Load saved plans
+    const savedPlans = loadSavedPlans();
+    dispatch({ type: 'LOAD_SAVED_PLANS', payload: savedPlans });
   }, []);
 
   const nextStep = useCallback((): void => {
@@ -271,6 +327,132 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [setError]);
 
+  // Plan management functions
+  const saveCurrentPlan = useCallback(async (title?: string, description?: string): Promise<void> => {
+    if (!state.executionPlan) {
+      throw new Error('No execution plan to save');
+    }
+    
+    try {
+      const planToSave: ExecutionPlan = {
+        ...state.executionPlan,
+        title: title || state.executionPlan.title || 'Untitled Plan',
+        description: description || state.executionPlan.description || '',
+        updatedAt: new Date()
+      };
+      
+      savePlan(planToSave);
+      dispatch({ type: 'UPDATE_SAVED_PLAN', payload: planToSave });
+      
+      // Show success message
+      // We could add a success notification system later
+      console.log('Plan saved successfully:', planToSave.title);
+    } catch (error) {
+      console.error('Failed to save plan:', error);
+      setError('Failed to save execution plan');
+      throw error;
+    }
+  }, [state.executionPlan, setError]);
+
+  const loadPlan = useCallback((planId: string): void => {
+    const plan = state.savedPlans.find(p => p.id === planId);
+    if (!plan) {
+      setError('Plan not found');
+      return;
+    }
+    
+    dispatch({ type: 'SET_EXECUTION_PLAN', payload: plan });
+    // Also set the subtasks if they exist in the plan steps
+    if (plan.steps && plan.steps.length > 0) {
+      const allSubtasks = plan.steps.flatMap(step => step.subtasks || []);
+      if (allSubtasks.length > 0) {
+        dispatch({ type: 'SET_SUBTASKS', payload: allSubtasks });
+      }
+    }
+    
+    // Navigate to plan review step to show the loaded plan
+    dispatch({ type: 'SET_STEP', payload: 3 });
+  }, [state.savedPlans, setError]);
+
+  const deleteSavedPlan = useCallback((planId: string): void => {
+    try {
+      deletePlan(planId);
+      dispatch({ type: 'REMOVE_SAVED_PLAN', payload: planId });
+    } catch (error) {
+      console.error('Failed to delete plan:', error);
+      setError('Failed to delete execution plan');
+    }
+  }, [setError]);
+
+  const renameSavedPlan = useCallback((planId: string, newTitle: string, newDescription?: string): void => {
+    try {
+      renamePlan(planId, newTitle, newDescription);
+      
+      // Update the plan in state
+      const updatedPlan = state.savedPlans.find(p => p.id === planId);
+      if (updatedPlan) {
+        const updated = {
+          ...updatedPlan,
+          title: newTitle,
+          description: newDescription || updatedPlan.description,
+          updatedAt: new Date()
+        };
+        dispatch({ type: 'UPDATE_SAVED_PLAN', payload: updated });
+      }
+    } catch (error) {
+      console.error('Failed to rename plan:', error);
+      setError('Failed to rename execution plan');
+    }
+  }, [state.savedPlans, setError]);
+
+  const exportPlanJson = useCallback((plan: ExecutionPlan): void => {
+    try {
+      exportPlanAsJson(plan);
+    } catch (error) {
+      console.error('Export failed:', error);
+      setError('Failed to export plan as JSON');
+    }
+  }, [setError]);
+
+  const exportPlanMarkdown = useCallback((plan: ExecutionPlan): void => {
+    try {
+      exportPlanAsMarkdown(plan);
+    } catch (error) {
+      console.error('Export failed:', error);
+      setError('Failed to export plan as Markdown');
+    }
+  }, [setError]);
+
+  const importPlan = useCallback(async (file: File): Promise<void> => {
+    try {
+      const importedPlan = await importPlanFromJson(file);
+      
+      // Generate new ID to avoid conflicts
+      const newPlan = {
+        ...importedPlan,
+        id: `imported-${Date.now()}`,
+        updatedAt: new Date()
+      };
+      
+      savePlan(newPlan);
+      dispatch({ type: 'ADD_SAVED_PLAN', payload: newPlan });
+    } catch (error) {
+      console.error('Import failed:', error);
+      setError('Failed to import execution plan');
+      throw error;
+    }
+  }, [setError]);
+
+  const clearAllSavedPlans = useCallback((): void => {
+    try {
+      clearAllPlans();
+      dispatch({ type: 'CLEAR_ALL_SAVED_PLANS' });
+    } catch (error) {
+      console.error('Failed to clear plans:', error);
+      setError('Failed to clear saved plans');
+    }
+  }, [setError]);
+
   const contextValue: AppContextType = {
     state,
     dispatch,
@@ -281,7 +463,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     resetState,
     updateConfig,
     exportConfig,
-    importConfig
+    importConfig,
+    saveCurrentPlan,
+    loadPlan,
+    deleteSavedPlan,
+    renameSavedPlan,
+    exportPlanJson,
+    exportPlanMarkdown,
+    importPlan,
+    clearAllSavedPlans
   };
 
   return (

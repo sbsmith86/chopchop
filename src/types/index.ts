@@ -91,6 +91,7 @@ export interface AppState {
   createdIssues: CreatedIssue[];
   isLoading: boolean;
   error: string | null;
+  savedPlans: ExecutionPlan[]; // Add saved plans to state
 }
 
 // GitHub API types
