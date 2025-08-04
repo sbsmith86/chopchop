@@ -59,10 +59,15 @@ export const AppShell: React.FC = () => {
   return (
     <div className="min-h-screen">
       <Header />
+      {console.log("showConfig:", showConfig)}
+      {/* Config panel modal */}
+      {showConfig && (
+        <ConfigPanel onClose={() => setShowConfig(false)} />
+      )}
 
       {/* Settings toggle */}
       <button
-        onClick={() => setShowConfig(true)}
+        onClick={() => {console.log("settings toggle clicked"); setShowConfig(true)}}
         className="fixed top-6 right-6 z-50 p-3 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 group"
         title="Settings"
       >
