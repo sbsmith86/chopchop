@@ -336,8 +336,8 @@ export function parseGitHubIssueUrl(url: string): {
 
   // Handle different URL formats
   const patterns = [
-    /github\.com\/([^\/]+)\/([^\/]+)\/issues\/(\d+)/,
-    /api\.github\.com\/repos\/([^\/]+)\/([^\/]+)\/issues\/(\d+)/
+    /github\.com\/([^/]+)\/([^/]+)\/issues\/(\d+)/,
+    /api\.github\.com\/repos\/([^/]+)\/([^/]+)\/issues\/(\d+)/
   ];
 
   for (const pattern of patterns) {
