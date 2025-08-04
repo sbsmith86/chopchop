@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { fetchGitHubIssue, parseGitHubIssueUrl } from '../utils/github';
-import { GitHubIssue } from '../types';
+import { generateClarificationQuestions } from '../utils/openai';
+import { GitHubIssue, ClarificationQuestion } from '../types';
 
 /**
  * Panel for inputting GitHub issue URL or markdown content
@@ -17,6 +18,42 @@ export const IssueInputPanel: React.FC = () => {
     }
     // Only depend on state.issue and nextStep
   }, [state.issue, nextStep]);
+
+  /**
+   * Generates clarification questions for the given issue
+   */
+  const generateAndSetClarificationQuestions = async (issue: GitHubIssue): Promise<void> => {
+    if (!state.config.openaiApiKey) {
+      // Skip question generation if no OpenAI key - proceed directly
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      const questionTexts = await generateClarificationQuestions(
+        { apiKey: state.config.openaiApiKey },
+        { issueTitle: issue.title, issueBody: issue.body }
+      );
+
+      // Convert question texts to ClarificationQuestion objects
+      const questions: ClarificationQuestion[] = questionTexts.map((questionText, index) => ({
+        id: `question-${Date.now()}-${index}`,
+        question: questionText,
+        required: true, // Make all AI-generated questions required by default
+        answer: '',
+        type: 'text' // Default to text type
+      }));
+
+      dispatch({ type: 'SET_CLARIFICATION_QUESTIONS', payload: questions });
+    } catch (error) {
+      console.warn('Failed to generate clarification questions:', error);
+      // Don't set an error - just proceed without questions
+      dispatch({ type: 'SET_CLARIFICATION_QUESTIONS', payload: [] });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   /**
    * Validates configuration before processing
@@ -79,6 +116,9 @@ export const IssueInputPanel: React.FC = () => {
         };
 
         dispatch({ type: 'SET_ISSUE', payload: issue });
+        
+        // Automatically generate clarification questions
+        await generateAndSetClarificationQuestions(issue);
       } else {
         // Handle markdown input
         const issue: GitHubIssue = {
@@ -89,6 +129,9 @@ export const IssueInputPanel: React.FC = () => {
         };
 
         dispatch({ type: 'SET_ISSUE', payload: issue });
+        
+        // Automatically generate clarification questions
+        await generateAndSetClarificationQuestions(issue);
       }
     } catch (error) {
       console.error('Failed to process issue input:', error);

@@ -9,6 +9,80 @@
 6. Save configuration
 7. Verify settings persist on page reload
 
+## AI-Powered Clarifying Questions Testing
+### Prerequisites
+- Valid OpenAI API key configured in settings
+- GitHub PAT with repository access (for GitHub URL testing)
+- Target GitHub repository configured
+
+### Test Case 1: Automatic Question Generation (GitHub URL)
+1. Navigate to Issue Input step
+2. Select "GitHub Issue URL" tab
+3. Enter a valid GitHub issue URL with unclear or missing requirements
+4. Click "Fetch & Process Issue"
+5. **Expected Result**: Application automatically moves to Step 2 and shows AI-generated clarifying questions
+6. **Verify**: Questions are specific to the issue content and address unclear requirements
+
+### Test Case 2: Automatic Question Generation (Markdown Content)
+1. Navigate to Issue Input step  
+2. Select "Markdown Content" tab
+3. Enter issue content with some ambiguous requirements (e.g., "Add a new feature to improve user experience")
+4. Click "Process Issue"
+5. **Expected Result**: Application automatically generates 3-5 relevant clarifying questions
+6. **Verify**: Questions help identify missing details about the feature requirements
+
+### Test Case 3: GitHub Comment Integration
+1. Follow Test Case 1 or 2 with a GitHub URL
+2. Wait for clarifying questions to appear
+3. Check the original GitHub issue for a new comment
+4. **Expected Result**: ChopChop posts clarifying questions as a comment on the GitHub issue
+5. **Verify**: Comment includes all generated questions and ChopChop attribution
+
+### Test Case 4: Question Answering Workflow
+1. Complete Test Case 1 or 2 to reach clarifying questions
+2. Answer some (but not all) required questions
+3. Try to click "Continue to Plan Review"
+4. **Expected Result**: Error message appears listing unanswered required questions
+5. Answer all required questions
+6. Click "Continue to Plan Review"
+7. **Expected Result**: Application proceeds to Step 3 and posts answers as GitHub comment
+
+### Test Case 5: Skip Questions Option
+1. Reach the clarifying questions step
+2. Click "Skip Questions" button
+3. **Expected Result**: Application proceeds to Plan Review without requiring answers
+4. **Verify**: No GitHub comments are posted when questions are skipped
+
+### Test Case 6: No Questions Needed
+1. Enter a very detailed, clear issue description
+2. Process the issue
+3. **Expected Result**: Application shows "No Additional Questions Needed" and allows immediate progression
+4. **Verify**: No GitHub comments are posted
+
+### Test Case 7: Context Integration in Plan Generation
+1. Complete the clarifying questions workflow with answers
+2. Proceed to Plan Review (Step 3)
+3. **Expected Result**: Generated execution plan includes a "Clarifications Provided" section
+4. **Verify**: Plan content references the Q&A context in implementation approach
+
+### Test Case 8: Context Integration in Subtask Generation
+1. Complete workflow through Plan Review
+2. Generate subtasks in Step 4
+3. **Expected Result**: Subtasks reflect the clarifications provided
+4. **Verify**: Subtask descriptions and acceptance criteria incorporate Q&A insights
+
+### Test Case 9: Fallback Behavior (No OpenAI Key)
+1. Remove or invalidate OpenAI API key in configuration
+2. Process an issue
+3. **Expected Result**: Application skips question generation and shows "No Additional Questions Needed"
+4. **Verify**: Workflow continues normally with fallback plan generation
+
+### Test Case 10: Error Handling
+1. Configure invalid OpenAI API key
+2. Process an issue
+3. **Expected Result**: Application gracefully handles API errors and continues workflow
+4. **Verify**: User-friendly error messages, no application crashes
+
 ## Issue Processing Testing
 1. Navigate to Issue Input step
 2. Test GitHub URL input with valid issue

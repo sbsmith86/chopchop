@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { ClarificationQuestion } from '../types';
+import { postClarificationQuestions, postClarificationAnswers } from '../utils/github';
 
 /**
  * Panel for displaying and answering clarification questions
@@ -8,6 +9,8 @@ import { ClarificationQuestion } from '../types';
 export const ClarificationQuestionPanel: React.FC = () => {
   const { state, dispatch, setError, nextStep } = useAppContext();
   const [localAnswers, setLocalAnswers] = useState<{ [key: string]: string }>({});
+  const [hasPostedQuestions, setHasPostedQuestions] = useState(false);
+  const [isPostingAnswers, setIsPostingAnswers] = useState(false);
 
   // Initialize local answers from state
   React.useEffect(() => {
@@ -17,6 +20,34 @@ export const ClarificationQuestionPanel: React.FC = () => {
     });
     setLocalAnswers(initialAnswers);
   }, [state.clarificationQuestions]);
+
+  // Post questions to GitHub when they are first generated
+  React.useEffect(() => {
+    const postQuestionsToGitHub = async () => {
+      if (
+        state.clarificationQuestions.length > 0 && 
+        !hasPostedQuestions && 
+        state.issue?.url && 
+        state.config.githubPat &&
+        state.config.githubRepo
+      ) {
+        try {
+          const questions = state.clarificationQuestions.map(q => q.question);
+          await postClarificationQuestions(
+            { pat: state.config.githubPat, repo: state.config.githubRepo },
+            state.issue.url,
+            questions
+          );
+          setHasPostedQuestions(true);
+        } catch (error) {
+          console.warn('Failed to post clarification questions to GitHub:', error);
+          // Don't show error to user - this is optional functionality
+        }
+      }
+    };
+
+    postQuestionsToGitHub();
+  }, [state.clarificationQuestions, hasPostedQuestions, state.issue?.url, state.config.githubPat, state.config.githubRepo]);
 
   const handleAnswerChange = (questionId: string, answer: string) => {
     // Update local state immediately for responsiveness
@@ -32,7 +63,7 @@ export const ClarificationQuestionPanel: React.FC = () => {
     });
   };
 
-  const handleProceed = () => {
+  const handleProceed = async () => {
     // Validate that all required questions are answered
     const unansweredQuestions = state.clarificationQuestions.filter(
       q => q.required && (!localAnswers[q.id] || localAnswers[q.id].trim() === '')
@@ -43,6 +74,45 @@ export const ClarificationQuestionPanel: React.FC = () => {
       return;
     }
 
+    setError(null);
+
+    // Post answers to GitHub if we have them and a URL
+    if (
+      state.issue?.url && 
+      state.config.githubPat &&
+      state.config.githubRepo &&
+      state.clarificationQuestions.some(q => localAnswers[q.id]?.trim())
+    ) {
+      try {
+        setIsPostingAnswers(true);
+        
+        const answeredQuestions = state.clarificationQuestions
+          .filter(q => localAnswers[q.id]?.trim())
+          .map(q => ({
+            question: q.question,
+            answer: localAnswers[q.id]
+          }));
+
+        if (answeredQuestions.length > 0) {
+          await postClarificationAnswers(
+            { pat: state.config.githubPat, repo: state.config.githubRepo },
+            state.issue.url,
+            answeredQuestions
+          );
+        }
+      } catch (error) {
+        console.warn('Failed to post clarification answers to GitHub:', error);
+        // Don't block progression - this is optional functionality
+      } finally {
+        setIsPostingAnswers(false);
+      }
+    }
+
+    nextStep();
+  };
+
+  const handleSkipQuestions = () => {
+    // Allow user to proceed without answering questions
     setError(null);
     nextStep();
   };
@@ -174,13 +244,32 @@ export const ClarificationQuestionPanel: React.FC = () => {
               </div>
             </div>
 
-            <button
-              onClick={handleProceed}
-              className="inline-flex items-center px-6 py-3 text-base font-semibold text-white bg-gradient-to-r from-blue-500 to-indigo-600 border border-transparent rounded-xl hover:from-blue-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-lg transition-all"
-            >
-              <span className="mr-2">→</span>
-              Continue to Plan Review
-            </button>
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={handleSkipQuestions}
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-all"
+              >
+                Skip Questions
+              </button>
+              
+              <button
+                onClick={handleProceed}
+                disabled={isPostingAnswers}
+                className="inline-flex items-center px-6 py-3 text-base font-semibold text-white bg-gradient-to-r from-blue-500 to-indigo-600 border border-transparent rounded-xl hover:from-blue-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isPostingAnswers ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    Posting Answers...
+                  </>
+                ) : (
+                  <>
+                    <span className="mr-2">→</span>
+                    Continue to Plan Review
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>

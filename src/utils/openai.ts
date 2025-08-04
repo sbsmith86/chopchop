@@ -191,7 +191,7 @@ export class OpenAIClient {
 
     } catch (error) {
       console.warn('OpenAI subtask generation failed, falling back to template:', error);
-      return this.getFallbackSubtasks(plan);
+      return this.getFallbackSubtasks();
     }
   }
 
@@ -272,10 +272,10 @@ ${issue.issueBody || 'No description provided'}
       .split('\n')
       .map(line => line.trim())
       .filter(line => {
-        const cleaned = line.replace(/^[\d\-\*\•\s]+/, '').trim();
+        const cleaned = line.replace(/^[\d\-*•\s]+/, '').trim();
         return cleaned.endsWith('?') && cleaned.length > 10 && cleaned.length < 200;
       })
-      .map(line => line.replace(/^[\d\-\*\•\s]+/, '').trim())
+      .map(line => line.replace(/^[\d\-*•\s]+/, '').trim())
       .filter((question, index, array) => array.indexOf(question) === index);
   }
 
@@ -671,7 +671,7 @@ Generate 5-15 subtasks that cover the entire execution plan in proper dependency
       const trimmed = line.trim();
 
       // Detect task titles (numbered or bulleted)
-      if (trimmed.match(/^[\d\-\*]\s*\.?\s*[A-Z]/)) {
+      if (trimmed.match(/^[\d\-*]\s*\.?\s*[A-Z]/)) {
         // Save previous task
         if (currentTask && currentTask.title) {
           tasks.push({
@@ -685,7 +685,7 @@ Generate 5-15 subtasks that cover the entire execution plan in proper dependency
         }
 
         // Start new task
-        const title = trimmed.replace(/^[\d\-\*]\s*\.?\s*/, '');
+        const title = trimmed.replace(/^[\d\-*]\s*\.?\s*/, '');
         currentTask = {
           title,
           description: title,
@@ -742,7 +742,7 @@ Generate 5-15 subtasks that cover the entire execution plan in proper dependency
   /**
    * Provides fallback subtasks when API fails
    */
-  private getFallbackSubtasks(plan: ExecutionPlan): Subtask[] {
+  private getFallbackSubtasks(): Subtask[] {
     const baseSubtasks = [
       {
         title: 'Set up development environment',
@@ -883,19 +883,22 @@ Split the task now:`;
 
       const splitTasks = JSON.parse(jsonMatch[0]);
 
-      return splitTasks.map((task: any) => ({
-        title: String(task.title || '').trim(),
-        description: String(task.description || '').trim(),
-        acceptanceCriteria: Array.isArray(task.acceptanceCriteria)
-          ? task.acceptanceCriteria.map((c: any) => String(c).trim())
-          : ['Task completed successfully'],
-        guardrails: originalTask.guardrails, // Inherit original guardrails
-        estimatedHours: Math.min(Math.max(Number(task.estimatedHours) || 1, 1), 4),
-        isTooBig: false, // Split tasks should not be too big
-        tags: originalTask.tags, // Inherit original tags
-        dependsOn: originalTask.dependsOn, // Inherit dependencies
-        prerequisiteTaskIds: originalTask.prerequisiteTaskIds
-      }));
+      return splitTasks.map((task: unknown) => {
+        const taskObj = task as Record<string, unknown>;
+        return {
+          title: String(taskObj.title || '').trim(),
+          description: String(taskObj.description || '').trim(),
+          acceptanceCriteria: Array.isArray(taskObj.acceptanceCriteria)
+            ? (taskObj.acceptanceCriteria as unknown[]).map((c: unknown) => String(c).trim())
+            : ['Task completed successfully'],
+          guardrails: originalTask.guardrails, // Inherit original guardrails
+          estimatedHours: Math.min(Math.max(Number(taskObj.estimatedHours) || 1, 1), 4),
+          isTooBig: false, // Split tasks should not be too big
+          tags: originalTask.tags, // Inherit original tags
+          dependsOn: originalTask.dependsOn, // Inherit dependencies
+          prerequisiteTaskIds: originalTask.prerequisiteTaskIds
+        };
+      });
 
     } catch (error) {
       console.warn('Failed to parse split response:', error);
