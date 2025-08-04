@@ -7,7 +7,6 @@ export const ProgressIndicator: React.FC = () => {
   // Add debug logging for step tracking
   console.log('ProgressIndicator rendered - currentStep:', state.currentStep);
 
-  // Fix: Use numeric steps instead of strings
   const steps = [
     { number: 1, name: 'Issue Input' },
     { number: 2, name: 'Clarification' },

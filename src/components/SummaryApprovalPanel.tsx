@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useAppContext } from '../context/AppContext';
 import { CreatedIssue, IssueCreationProgress } from '../types';
 import { GitHubClient } from '../utils/github';
@@ -10,20 +10,27 @@ import { CompletionScreen } from './CompletionScreen';
  * Final review before creating GitHub issues with progress tracking
  */
 export const SummaryApprovalPanel: React.FC = () => {
-  const { state, setError, setLoading, resetState } = useAppContext();
-  const [createdIssues, setCreatedIssues] = useState<CreatedIssue[]>([]);
-  const [isCreating, setIsCreating] = useState(false);
-  const [showCompletion, setShowCompletion] = useState(false);
-  const [progress, setProgress] = useState<IssueCreationProgress | null>(null);
+  const { state, setError, resetState, dispatch } = useAppContext();
+
+  // Debug output
+  console.log('SummaryApprovalPanel render state:', {
+    isCreating: state.isCreating,
+    progress: state.creationProgress,
+    showCompletion: state.showCompletion,
+    createdIssuesCount: state.createdIssues?.length || 0
+  });
 
   /**
    * Handle progress updates during issue creation
    */
   const handleProgress = (progressUpdate: IssueCreationProgress) => {
-    setProgress(progressUpdate);
+    dispatch({ type: 'SET_CREATION_PROGRESS', payload: progressUpdate });
 
     if (progressUpdate.status === 'completed' && progressUpdate.createdIssue) {
-      setCreatedIssues(prev => [...prev, progressUpdate.createdIssue!]);
+      dispatch({
+        type: 'SET_CREATED_ISSUES',
+        payload: [...(state.createdIssues || []), progressUpdate.createdIssue]
+      });
     }
   };
 
@@ -31,37 +38,34 @@ export const SummaryApprovalPanel: React.FC = () => {
    * Create GitHub issues from subtasks with progress tracking
    */
   const handleCreateIssues = async () => {
-    if (!state.config?.githubPat || !state.config?.githubRepo || !state.subtasks.length) {
-      setError('GitHub configuration and subtasks are required');
-      return;
-    }
-
-    const repoMatch = state.config.githubRepo.match(/^([^/]+)\/(.+)$/);
-    if (!repoMatch) {
-      setError('Invalid repository format. Expected: owner/repository');
-      return;
-    }
-
-    const [, owner, repo] = repoMatch;
-
-    setIsCreating(true);
-    setLoading(true);
+    console.log('handleCreateIssues called');
+    dispatch({ type: 'SET_IS_CREATING', payload: true });
     setError(null);
-    setCreatedIssues([]);
-    setShowCompletion(false);
+    dispatch({ type: 'SET_CREATED_ISSUES', payload: [] });
+    dispatch({ type: 'SET_SHOW_COMPLETION', payload: false });
 
-    // Set initial progress immediately
-    setProgress({
-      currentIssue: 0,
-      totalIssues: state.subtasks.length,
-      currentTask: 'Initializing GitHub issue creation...',
-      status: 'creating'
+    // Set initial progress
+    dispatch({
+      type: 'SET_CREATION_PROGRESS',
+      payload: {
+        currentIssue: 0,
+        totalIssues: state.subtasks.length,
+        currentTask: 'Initializing GitHub issue creation...',
+        status: 'creating'
+      }
     });
 
     try {
       const githubClient = new GitHubClient(state.config.githubPat);
       const parentTitle = state.issue?.title || 'Decomposed Issue';
       const parentUrl = state.issue?.url;
+
+      // Parse owner and repo from githubRepo (format: "owner/repo")
+      let owner = '';
+      let repo = '';
+      if (state.config.githubRepo) {
+        [owner, repo] = state.config.githubRepo.split('/');
+      }
 
       const created = await githubClient.createSubtaskIssues(
         owner,
@@ -72,15 +76,14 @@ export const SummaryApprovalPanel: React.FC = () => {
         handleProgress
       );
 
-      setCreatedIssues(created);
-      setShowCompletion(true);
+      dispatch({ type: 'SET_CREATED_ISSUES', payload: created });
+      dispatch({ type: 'SET_SHOW_COMPLETION', payload: true });
       setError(null);
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to create GitHub issues');
     } finally {
-      setIsCreating(false);
-      setLoading(false);
-      setProgress(null);
+      dispatch({ type: 'SET_IS_CREATING', payload: false });
+      dispatch({ type: 'SET_CREATION_PROGRESS', payload: null });
     }
   };
 
@@ -133,17 +136,17 @@ ${task.isTooBig ? '⚠️ **Warning:** This task may be too large and should be 
    * Start a new decomposition process
    */
   const handleStartNew = () => {
-    setShowCompletion(false);
-    setCreatedIssues([]);
-    setProgress(null);
+    dispatch({ type: 'SET_SHOW_COMPLETION', payload: false });
+    dispatch({ type: 'SET_CREATED_ISSUES', payload: [] });
+    dispatch({ type: 'SET_CREATION_PROGRESS', payload: null });
     resetState();
   };
 
   // Show completion screen if issues were created successfully
-  if (showCompletion && createdIssues.length > 0) {
+  if (state.showCompletion && state.createdIssues && state.createdIssues.length > 0) {
     return (
       <CompletionScreen
-        createdIssues={createdIssues}
+        createdIssues={state.createdIssues}
         subtasks={state.subtasks}
         repositoryUrl={state.config?.githubRepo || ''}
         onStartNew={handleStartNew}
@@ -152,28 +155,20 @@ ${task.isTooBig ? '⚠️ **Warning:** This task may be too large and should be 
     );
   }
 
-  // Debugging output
-  console.log('SummaryApprovalPanel render state:', {
-    isCreating,
-    progress,
-    showCompletion,
-    createdIssuesCount: createdIssues.length
-  });
-
   // Show progress if currently creating issues
-  if (isCreating) {
+  if (state.isCreating) {
     console.log('Showing progress component');
     return (
       <div className="p-8">
         <div className="max-w-2xl mx-auto">
           <IssueCreationProgressComponent
-            progress={progress || {
+            progress={state.creationProgress || {
               currentIssue: 0,
               totalIssues: state.subtasks.length,
               currentTask: 'Initializing GitHub issue creation...',
               status: 'creating'
             }}
-            createdIssues={createdIssues}
+            createdIssues={state.createdIssues || []}
           />
         </div>
       </div>
@@ -367,15 +362,22 @@ ${task.isTooBig ? '⚠️ **Warning:** This task may be too large and should be 
           </button>
 
 
-
+          {console.log('Action button state:', {
+  isCreating: state.isCreating,
+  hasPat: !!state.config?.githubPat,
+  hasRepo: !!state.config?.githubRepo,
+  subtasksLength: state.subtasks.length,
+  disabled: state.isCreating || !state.config?.githubPat || !state.config?.githubRepo || state.subtasks.length === 0
+})}
           <button
             onClick={handleCreateIssues}
-            disabled={isCreating || !state.config?.githubPat || !state.config?.githubRepo || state.subtasks.length === 0}
-            className="inline-flex items-center px-6 py-3 text-base font-semibold text-white bg-gradient-to-r from-emerald-500 to-green-600 border border-transparent rounded-xl hover:from-emerald-600 hover:to-green-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transition-all"
+            disabled={state.isCreating || !state.config?.githubPat || !state.config?.githubRepo || state.subtasks.length === 0}
+            className={`inline-flex items-center px-6 py-3 text-base font-semibold text-white bg-gradient-to-r from-emerald-500 to-green-600 border border-transparent rounded-xl hover:from-emerald-600 hover:to-green-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-lg transition-all
+    ${state.isCreating || !state.config?.githubPat || !state.config?.githubRepo || state.subtasks.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            {isCreating ? (
+            {state.isCreating ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-solid border-white border-t-transparent mr-2"></div>
                 Creating Issues...
               </>
             ) : (
