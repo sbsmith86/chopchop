@@ -67,7 +67,6 @@ type AppAction =
   | { type: 'CLEAR_ALL_SAVED_PLANS' };
 
 const appReducer = (state: AppState, action: AppAction): AppState => {
-  console.log("reducer called. action: ", action.type, action.payload);
   switch (action.type) {
     case 'SET_CONFIG':
       // Fix: Don't save in reducer, let the action caller handle saving
@@ -232,8 +231,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   const nextStep = useCallback((): void => {
-    console.log('nextStep called - current step:', state.currentStep);
-
     let nextStepNumber: number;
 
     switch (state.currentStep) {
@@ -274,7 +271,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         nextStepNumber = Math.min(state.currentStep + 1, 5);
     }
 
-    console.log(`Step transition: ${state.currentStep} -> ${nextStepNumber}`);
     dispatch({ type: 'SET_STEP', payload: nextStepNumber });
   }, [state.currentStep, state.issue, state.executionPlan, state.subtasks.length]);
 
@@ -297,7 +293,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Configuration management functions
   const updateConfig = useCallback((config: Partial<AppConfig>): void => {
-    console.log('updateConfig called with:', config);
     const updatedConfig = { ...state.config, ...config };
 
     // Update state first
@@ -346,7 +341,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       
       // Show success message
       // We could add a success notification system later
-      console.log('Plan saved successfully:', planToSave.title);
     } catch (error) {
       console.error('Failed to save plan:', error);
       setError('Failed to save execution plan');
