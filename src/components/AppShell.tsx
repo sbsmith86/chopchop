@@ -19,6 +19,9 @@ export const AppShell: React.FC = () => {
   const { state } = useAppContext();
   const [showConfig, setShowConfig] = React.useState(false);
 
+  // Add debug logging for step tracking
+  console.log('AppShell rendered - currentStep:', state.currentStep);
+
   // Check if the app is configured
   const isConfigured = Boolean(
     state.config?.githubPat &&
@@ -30,6 +33,8 @@ export const AppShell: React.FC = () => {
    * Renders the appropriate panel based on current step
    */
   const renderCurrentPanel = (): JSX.Element => {
+    console.log('AppShell renderCurrentPanel - currentStep:', state.currentStep, 'showConfig:', showConfig, 'isConfigured:', isConfigured);
+    
     if (showConfig || !isConfigured) {
       return <ConfigPanel onClose={() => setShowConfig(false)} />;
     }

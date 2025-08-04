@@ -42,13 +42,12 @@ type AppAction =
 const appReducer = (state: AppState, action: AppAction): AppState => {
   switch (action.type) {
     case 'SET_CONFIG':
-      const configToSave = action.payload;
-      saveConfig(configToSave);
-      return { ...state, config: configToSave };
+      // Fix: Don't save in reducer, let the action caller handle saving
+      return { ...state, config: action.payload };
 
     case 'UPDATE_CONFIG':
+      // Fix: Don't save in reducer, let the action caller handle saving
       const updatedConfig = { ...state.config, ...action.payload };
-      saveConfig(updatedConfig);
       return { ...state, config: updatedConfig };
 
     case 'LOAD_CONFIG':
@@ -221,8 +220,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Configuration management functions
   const updateConfig = useCallback((config: Partial<AppConfig>): void => {
     console.log('updateConfig called with:', config);
+    const updatedConfig = { ...state.config, ...config };
+    
+    // Update state first
     dispatch({ type: 'UPDATE_CONFIG', payload: config });
-  }, []);
+    
+    // Then save to localStorage
+    saveConfig(updatedConfig);
+  }, [state.config]);
 
   const exportConfig = useCallback((): void => {
     try {
