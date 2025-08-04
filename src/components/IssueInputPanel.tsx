@@ -67,6 +67,7 @@ export const IssueInputPanel: React.FC = () => {
         }
 
         // Fetch the issue with proper error handling
+        console.log('Fetching GitHub issue from URL:', input.trim());
         const githubIssue = await fetchGitHubIssue(
           {
             pat: state.config.githubPat!,
@@ -75,14 +76,17 @@ export const IssueInputPanel: React.FC = () => {
           input.trim()
         );
 
+        console.log('GitHub API response:', githubIssue);
         const issue: GitHubIssue = {
           id: githubIssue.number?.toString() || Date.now().toString(),
-          title: githubIssue.title,
+          title: githubIssue.title || 'Untitled Issue',
           body: githubIssue.body || '',
           url: githubIssue.url,
           number: githubIssue.number,
           repository: state.config.githubRepo
         };
+
+        console.log('Mapped issue object:', issue);
 
         dispatch({ type: 'SET_ISSUE', payload: issue });
       } else {
