@@ -67,6 +67,21 @@ export const SummaryApprovalPanel: React.FC = () => {
         handleProgress
       );
 
+      // Post summary comment to parent issue if parent URL exists
+      if (parentUrl && state.issue?.number) {
+        try {
+          await githubClient.postChopChopSummary(
+            parentUrl,
+            state.subtasks,
+            created
+          );
+        } catch (summaryError) {
+          console.warn('Failed to post summary comment:', summaryError);
+          // Don't fail the entire process if summary comment fails
+          // The user will still see their created issues
+        }
+      }
+
       dispatch({ type: 'SET_CREATED_ISSUES', payload: created });
       dispatch({ type: 'SET_SHOW_COMPLETION', payload: true });
       setError(null);
