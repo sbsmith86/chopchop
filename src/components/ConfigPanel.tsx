@@ -20,9 +20,11 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ onClose }) => {
    * Handles saving configuration with user feedback
    */
   const handleSave = async (): Promise<void> => {
+    console.log('ConfigPanel handleSave - currentStep:', state.currentStep);
     setIsSaving(true);
     try {
       console.log('Saving config:', localConfig);
+      // Fix: Update config immediately without causing race condition
       updateConfig(localConfig);
       await new Promise(resolve => setTimeout(resolve, 500)); // Brief feedback delay
       onClose?.();

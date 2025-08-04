@@ -9,6 +9,9 @@ export const ClarificationQuestionPanel: React.FC = () => {
   const { state, dispatch, setError, nextStep } = useAppContext();
   const [localAnswers, setLocalAnswers] = useState<{ [key: string]: string }>({});
 
+  // Add debug logging for step tracking
+  console.log('ClarificationQuestionPanel rendered - currentStep:', state.currentStep);
+
   // Initialize local answers from state
   React.useEffect(() => {
     const initialAnswers: { [key: string]: string } = {};
@@ -33,6 +36,8 @@ export const ClarificationQuestionPanel: React.FC = () => {
   };
 
   const handleProceed = () => {
+    console.log('ClarificationQuestionPanel handleProceed - currentStep:', state.currentStep);
+    
     // Validate that all required questions are answered
     const unansweredQuestions = state.clarificationQuestions.filter(
       q => q.required && (!localAnswers[q.id] || localAnswers[q.id].trim() === '')
