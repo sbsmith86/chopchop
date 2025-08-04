@@ -27,6 +27,9 @@ export interface ClarificationQuestion {
   question: string;
   answer?: string;
   required: boolean;
+  type?: 'text' | 'choice' | 'number';
+  options?: string[];
+  context?: string;
 }
 
 export interface ExecutionPlan {
