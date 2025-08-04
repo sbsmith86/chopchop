@@ -10,19 +10,17 @@ export const IssueInputPanel: React.FC = () => {
   const { state, setError, setLoading, nextStep, dispatch } = useAppContext();
   const [input, setInput] = useState('');
   const [inputType, setInputType] = useState<'url' | 'markdown'>('url');
-  const [issueProcessed, setIssueProcessed] = useState(false);
 
   // Add debug logging for step tracking
   console.log('IssueInputPanel rendered - currentStep:', state.currentStep);
 
-  // Fix: Call nextStep only after issue is successfully set in state
   React.useEffect(() => {
-    if (issueProcessed && state.issue) {
+    if (state.issue) {
       console.log('Issue successfully set, proceeding to next step. CurrentStep:', state.currentStep);
-      setIssueProcessed(false); // Reset flag
       nextStep();
     }
-  }, [state.issue, issueProcessed, nextStep, state.currentStep]);
+    // Only depend on state.issue and nextStep
+  }, [state.issue, nextStep]);
 
   /**
    * Validates configuration before processing
@@ -100,9 +98,6 @@ export const IssueInputPanel: React.FC = () => {
 
         dispatch({ type: 'SET_ISSUE', payload: issue });
       }
-
-      // Set flag to trigger nextStep after state update
-      setIssueProcessed(true);
     } catch (error) {
       console.error('Failed to process issue input:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to process issue input';
