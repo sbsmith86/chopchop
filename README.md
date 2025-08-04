@@ -82,6 +82,9 @@ chopchop/
 - 🔗 **GitHub Integration:** Direct issue fetching and creation
 - 🎨 **Modern UI:** Responsive design with Tailwind CSS
 - 🔒 **Security:** Browser-only operation with local storage
+- 💾 **Local Plan Storage:** Save, manage, and export execution plans locally
+- 📥 **Import/Export:** Backup and share plans as JSON or Markdown files
+- 🗂️ **Plan Management:** Organize, rename, and version your execution plans
 
 ### Troubleshooting
 
@@ -104,6 +107,35 @@ npm install
 - Ensure your GitHub PAT has `repo` permissions
 - Verify your OpenAI API key is valid and has credits
 - Check browser console for specific error messages
+
+### Local Plan Storage
+
+ChopChop automatically saves your execution plans locally in your browser. Here's what you need to know:
+
+#### Automatic Saving
+- **Auto-Save:** Plans are automatically saved when you create or modify them in the Plan Review Editor
+- **Persistence:** Plans persist across browser sessions on the same device
+- **Privacy:** All data remains local—no network requests or cloud sync required
+
+#### Plan Management
+Access the Plan Manager by clicking the "Plans" button in the header:
+
+- **View Plans:** Browse all saved plans with titles, descriptions, and metadata
+- **Load Plans:** Click any plan to load it back into the editor for review or modification
+- **Rename Plans:** Edit plan titles and descriptions directly in the interface
+- **Delete Plans:** Remove individual plans or clear all plans at once
+
+#### Export & Import
+- **Export as JSON:** Download plans as JSON files for backup or sharing
+- **Export as Markdown:** Generate formatted Markdown files for documentation
+- **Import Plans:** Upload previously exported JSON files to restore plans
+
+#### Important Notes
+⚠️ **Browser Storage:** Plans are stored in browser localStorage. Clearing browser data will remove all saved plans.
+
+💡 **Backup Tip:** Regularly export important plans as JSON files for backup purposes.
+
+🔒 **Privacy:** All plan data stays on your device—perfect for sensitive or proprietary projects.
 
 ---
 
