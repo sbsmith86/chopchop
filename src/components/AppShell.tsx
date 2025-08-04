@@ -32,25 +32,26 @@ export const AppShell: React.FC = () => {
   /**
    * Renders the appropriate panel based on current step
    */
-  const renderCurrentPanel = (): JSX.Element => {
-    console.log('AppShell renderCurrentPanel - currentStep:', state.currentStep, 'showConfig:', showConfig, 'isConfigured:', isConfigured);
-    
-    if (showConfig || !isConfigured) {
-      return <ConfigPanel onClose={() => setShowConfig(false)} />;
-    }
-
+  const renderCurrentPanel = () => {
     switch (state.currentStep) {
       case 1:
+        console.log('Rendering IssueInputPanel');
         return <IssueInputPanel />;
       case 2:
+        console.log('Rendering ClarificationQuestionPanel');
         return <ClarificationQuestionPanel />;
       case 3:
+        console.log('Rendering PlanReviewEditor');
         return <PlanReviewEditor />;
       case 4:
+        console.log('Rendering SubtaskListPanel');
         return <SubtaskListPanel />;
       case 5:
+        console.log('Rendering SummaryApprovalPanel');
         return <SummaryApprovalPanel />;
+      // Add more cases if you have more steps
       default:
+        console.log('Rendering default panel');
         return <IssueInputPanel />;
     }
   };

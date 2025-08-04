@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
-import { AppState, AppStep, GitHubIssue, ClarificationQuestion, ExecutionPlan, Subtask, CreatedIssue, AppConfig } from '../types';
+import { AppState, AppStep, GitHubIssue, ClarificationQuestion, ExecutionPlan, Subtask, CreatedIssue, AppConfig, IssueCreationProgress } from '../types';
 import { saveConfig, loadConfig, exportConfig as exportConfigFile, importConfig as importConfigFile } from '../utils/storage';
 
 const initialState: AppState = {
@@ -19,7 +19,10 @@ const initialState: AppState = {
   subtasks: [],
   createdIssues: [],
   isLoading: false,
-  error: null
+  error: null,
+  isCreating: false,
+  creationProgress: null,
+  showCompletion: false
 };
 
 type AppAction =
@@ -37,18 +40,25 @@ type AppAction =
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_STEP'; payload: number }
   | { type: 'SET_CURRENT_STEP'; payload: AppStep }
-  | { type: 'RESET_STATE' };
+  | { type: 'RESET_STATE' }
+  | { type: 'SET_IS_CREATING'; payload: boolean }
+  | { type: 'SET_CREATION_PROGRESS'; payload: IssueCreationProgress | null }
+  | { type: 'SET_CREATED_ISSUES'; payload: CreatedIssue[] }
+  | { type: 'SET_SHOW_COMPLETION'; payload: boolean }
+  | { type: 'HIDE_COMPLETION' };
 
 const appReducer = (state: AppState, action: AppAction): AppState => {
+  console.log("reducer called. action: ", action.type, action.payload);
   switch (action.type) {
     case 'SET_CONFIG':
       // Fix: Don't save in reducer, let the action caller handle saving
       return { ...state, config: action.payload };
 
-    case 'UPDATE_CONFIG':
+    case 'UPDATE_CONFIG': {
       // Fix: Don't save in reducer, let the action caller handle saving
       const updatedConfig = { ...state.config, ...action.payload };
       return { ...state, config: updatedConfig };
+    }
 
     case 'LOAD_CONFIG':
       return { ...state, config: action.payload };
@@ -121,6 +131,18 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
         ...initialState,
         config: state.config // Keep the configuration
       };
+
+    case 'SET_IS_CREATING':
+      return { ...state, isCreating: action.payload };
+    case 'SET_CREATION_PROGRESS':
+      return { ...state, creationProgress: action.payload };
+    case 'SET_CREATED_ISSUES':
+      return { ...state, createdIssues: action.payload };
+    case 'SET_SHOW_COMPLETION':
+      return { ...state, showCompletion: action.payload };
+
+    case 'HIDE_COMPLETION':
+      return { ...state, showCompletion: false };
 
     default:
       return state;
@@ -221,10 +243,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const updateConfig = useCallback((config: Partial<AppConfig>): void => {
     console.log('updateConfig called with:', config);
     const updatedConfig = { ...state.config, ...config };
-    
+
     // Update state first
     dispatch({ type: 'UPDATE_CONFIG', payload: config });
-    
+
     // Then save to localStorage
     saveConfig(updatedConfig);
   }, [state.config]);
