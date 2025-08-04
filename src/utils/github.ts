@@ -12,6 +12,18 @@ export interface IssueCreationProgress {
 
 export type ProgressCallback = (progress: IssueCreationProgress) => void;
 
+export interface GitHubApiIssue {
+  number: number;
+  title: string;
+  body: string;
+  url: string;
+  state: string;
+  labels: string[];
+  assignees: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 /**
  * GitHub API client for creating issues
  */
@@ -23,7 +35,7 @@ export class GitHubClient {
   /**
    * Fetch a GitHub issue by URL
    */
-  async fetchIssue(issueUrl: string): Promise<GitHubIssue> {
+  async fetchIssue(issueUrl: string): Promise<GitHubApiIssue> {
     const parsed = parseGitHubIssueUrl(issueUrl);
     if (!parsed) {
       throw new Error('Invalid GitHub issue URL format');
@@ -313,7 +325,7 @@ export function parseGitHubIssueUrl(url: string): {
 export async function fetchGitHubIssue(
   config: { pat: string; repo: string },
   issueUrl: string
-): Promise<GitHubIssue> {
+): Promise<GitHubApiIssue> {
   if (!config.pat) {
     throw new Error('GitHub Personal Access Token is required');
   }

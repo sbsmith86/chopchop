@@ -76,12 +76,12 @@ export const IssueInputPanel: React.FC = () => {
         );
 
         const issue: GitHubIssue = {
-          id: githubIssue.id,
+          id: githubIssue.number?.toString() || Date.now().toString(),
           title: githubIssue.title,
-          body: githubIssue.body,
+          body: githubIssue.body || '',
           url: githubIssue.url,
           number: githubIssue.number,
-          repository: githubIssue.repository
+          repository: state.config.githubRepo
         };
 
         dispatch({ type: 'SET_ISSUE', payload: issue });
