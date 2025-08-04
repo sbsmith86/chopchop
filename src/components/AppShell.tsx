@@ -19,8 +19,7 @@ export const AppShell: React.FC = () => {
   const { state } = useAppContext();
   const [showConfig, setShowConfig] = React.useState(false);
 
-  // Add debug logging for step tracking
-  console.log('AppShell rendered - currentStep:', state.currentStep);
+
 
   // Check if the app is configured
   const isConfigured = Boolean(
@@ -35,23 +34,17 @@ export const AppShell: React.FC = () => {
   const renderCurrentPanel = () => {
     switch (state.currentStep) {
       case 1:
-        console.log('Rendering IssueInputPanel');
         return <IssueInputPanel />;
       case 2:
-        console.log('Rendering ClarificationQuestionPanel');
         return <ClarificationQuestionPanel />;
       case 3:
-        console.log('Rendering PlanReviewEditor');
         return <PlanReviewEditor />;
       case 4:
-        console.log('Rendering SubtaskListPanel');
         return <SubtaskListPanel />;
       case 5:
-        console.log('Rendering SummaryApprovalPanel');
         return <SummaryApprovalPanel />;
       // Add more cases if you have more steps
       default:
-        console.log('Rendering default panel');
         return <IssueInputPanel />;
     }
   };
@@ -59,7 +52,6 @@ export const AppShell: React.FC = () => {
   return (
     <div className="min-h-screen">
       <Header />
-      {console.log("showConfig:", showConfig)}
       {/* Config panel modal */}
       {showConfig && (
         <ConfigPanel onClose={() => setShowConfig(false)} />
@@ -67,7 +59,7 @@ export const AppShell: React.FC = () => {
 
       {/* Settings toggle */}
       <button
-        onClick={() => {console.log("settings toggle clicked"); setShowConfig(true)}}
+        onClick={() => setShowConfig(true)}
         className="fixed top-6 right-6 z-50 p-3 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 group"
         title="Settings"
       >

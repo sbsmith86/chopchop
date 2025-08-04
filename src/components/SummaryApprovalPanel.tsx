@@ -12,14 +12,6 @@ import { CompletionScreen } from './CompletionScreen';
 export const SummaryApprovalPanel: React.FC = () => {
   const { state, setError, resetState, dispatch } = useAppContext();
 
-  // Debug output
-  console.log('SummaryApprovalPanel render state:', {
-    isCreating: state.isCreating,
-    progress: state.creationProgress,
-    showCompletion: state.showCompletion,
-    createdIssuesCount: state.createdIssues?.length || 0
-  });
-
   /**
    * Handle progress updates during issue creation
    */
@@ -38,7 +30,6 @@ export const SummaryApprovalPanel: React.FC = () => {
    * Create GitHub issues from subtasks with progress tracking
    */
   const handleCreateIssues = async () => {
-    console.log('handleCreateIssues called');
     dispatch({ type: 'SET_IS_CREATING', payload: true });
     setError(null);
     dispatch({ type: 'SET_CREATED_ISSUES', payload: [] });
@@ -157,7 +148,6 @@ ${task.isTooBig ? '⚠️ **Warning:** This task may be too large and should be 
 
   // Show progress if currently creating issues
   if (state.isCreating) {
-    console.log('Showing progress component');
     return (
       <div className="p-8">
         <div className="max-w-2xl mx-auto">
@@ -362,13 +352,6 @@ ${task.isTooBig ? '⚠️ **Warning:** This task may be too large and should be 
           </button>
 
 
-          {console.log('Action button state:', {
-  isCreating: state.isCreating,
-  hasPat: !!state.config?.githubPat,
-  hasRepo: !!state.config?.githubRepo,
-  subtasksLength: state.subtasks.length,
-  disabled: state.isCreating || !state.config?.githubPat || !state.config?.githubRepo || state.subtasks.length === 0
-})}
           <button
             onClick={handleCreateIssues}
             disabled={state.isCreating || !state.config?.githubPat || !state.config?.githubRepo || state.subtasks.length === 0}

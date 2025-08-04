@@ -53,13 +53,6 @@ export const PlanReviewEditor: React.FC = () => {
    * Save the edited plan and proceed
    */
   const handleSaveAndProceed = async () => {
-    console.log('PlanReviewEditor: handleSaveAndProceed called');
-    console.log('Current state:', {
-      currentStep: state.currentStep,
-      hasExecutionPlan: !!state.executionPlan,
-      planContentLength: planContent.length
-    });
-
     if (!planContent.trim()) {
       setError('Please enter or generate an execution plan before proceeding');
       return;
@@ -79,8 +72,6 @@ export const PlanReviewEditor: React.FC = () => {
         updatedAt: new Date()
       };
 
-      console.log('Saving execution plan:', updatedPlan);
-
       // Save the plan to state
       dispatch({ type: 'SET_EXECUTION_PLAN', payload: updatedPlan });
 
@@ -92,7 +83,6 @@ export const PlanReviewEditor: React.FC = () => {
 
       setError(null);
 
-      console.log('Calling nextStep() - current step:', state.currentStep);
       nextStep();
     } catch (error) {
       console.error('Failed to save plan:', error);
@@ -132,9 +122,6 @@ export const PlanReviewEditor: React.FC = () => {
       await saveCurrentPlan(updatedPlan.title, updatedPlan.description);
 
       setError(null);
-      
-      // Show a brief success message or indicator
-      console.log('Plan saved successfully');
     } catch (error) {
       console.error('Failed to save plan:', error);
       setError('Failed to save execution plan');

@@ -34,7 +34,6 @@ export function loadConfig(): AppConfig | null {
 export function saveConfig(config: AppConfig): void {
   try {
     localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
-    console.log('Config saved to localStorage:', config);
   } catch (error) {
     console.error('Failed to save config:', error);
     throw new Error('Failed to save configuration');
@@ -141,7 +140,6 @@ export function savePlan(plan: ExecutionPlan): void {
     }
     
     localStorage.setItem(PLANS_KEY, JSON.stringify(existingPlans));
-    console.log('Plan saved to localStorage:', plan.title);
   } catch (error) {
     console.error('Failed to save plan:', error);
     throw new Error('Failed to save execution plan');
@@ -156,7 +154,6 @@ export function deletePlan(planId: string): void {
     const existingPlans = loadSavedPlans();
     const filteredPlans = existingPlans.filter(p => p.id !== planId);
     localStorage.setItem(PLANS_KEY, JSON.stringify(filteredPlans));
-    console.log('Plan deleted from localStorage:', planId);
   } catch (error) {
     console.error('Failed to delete plan:', error);
     throw new Error('Failed to delete execution plan');
@@ -183,7 +180,6 @@ export function renamePlan(planId: string, newTitle: string, newDescription?: st
     };
     
     localStorage.setItem(PLANS_KEY, JSON.stringify(existingPlans));
-    console.log('Plan renamed:', planId, newTitle);
   } catch (error) {
     console.error('Failed to rename plan:', error);
     throw new Error('Failed to rename execution plan');
@@ -318,7 +314,6 @@ export function importPlanFromJson(file: File): Promise<ExecutionPlan> {
 export function clearAllPlans(): void {
   try {
     localStorage.removeItem(PLANS_KEY);
-    console.log('All plans cleared from localStorage');
   } catch (error) {
     console.error('Failed to clear plans:', error);
     throw new Error('Failed to clear saved plans');

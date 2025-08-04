@@ -11,12 +11,8 @@ export const IssueInputPanel: React.FC = () => {
   const [input, setInput] = useState('');
   const [inputType, setInputType] = useState<'url' | 'markdown'>('url');
 
-  // Add debug logging for step tracking
-  console.log('IssueInputPanel rendered - currentStep:', state.currentStep);
-
   React.useEffect(() => {
     if (state.issue) {
-      console.log('Issue successfully set, proceeding to next step. CurrentStep:', state.currentStep);
       nextStep();
     }
     // Only depend on state.issue and nextStep
@@ -65,7 +61,6 @@ export const IssueInputPanel: React.FC = () => {
         }
 
         // Fetch the issue with proper error handling
-        console.log('Fetching GitHub issue from URL:', input.trim());
         const githubIssue = await fetchGitHubIssue(
           {
             pat: state.config.githubPat!,
@@ -74,7 +69,6 @@ export const IssueInputPanel: React.FC = () => {
           input.trim()
         );
 
-        console.log('GitHub API response:', githubIssue);
         const issue: GitHubIssue = {
           id: githubIssue.number?.toString() || Date.now().toString(),
           title: githubIssue.title || 'Untitled Issue',
@@ -83,8 +77,6 @@ export const IssueInputPanel: React.FC = () => {
           number: githubIssue.number,
           repository: state.config.githubRepo
         };
-
-        console.log('Mapped issue object:', issue);
 
         dispatch({ type: 'SET_ISSUE', payload: issue });
       } else {
