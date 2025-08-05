@@ -563,7 +563,9 @@ ${answeredQuestions || 'No additional clarifications provided'}
    * Builds prompt for subtask generation with dependency analysis
    */
   private buildSubtaskPrompt(plan: ExecutionPlan): string {
-    return `Break down this execution plan into atomic, actionable subtasks with proper dependency ordering. Each subtask should be completable in under 2 hours and affect only a single component or file.
+    return `**IMPORTANT: Before starting any task, first review the entire codebase and learn it thoroughly. Pay special attention to the README.md file which contains the comprehensive Technical Design Document (starting from section "# Technical Design Document"). This document outlines the complete architecture, requirements, and implementation guidelines for the ChopChop project.**
+
+Break down this execution plan into atomic, actionable subtasks with proper dependency ordering. Each subtask should be completable in under 2 hours and affect only a single component or file.
 
 **EXECUTION PLAN:**
 ${plan.content}
@@ -757,6 +759,25 @@ Generate 5-15 subtasks that cover the entire execution plan in proper dependency
   private getFallbackSubtasks(): Subtask[] {
     const baseSubtasks = [
       {
+        title: 'First review the entire codebase and learn it',
+        description: 'Before starting any implementation, thoroughly review the entire codebase to understand the existing patterns, architecture, and coding standards. Pay special attention to the README.md file which contains the comprehensive Technical Design Document with complete project requirements and architecture guidelines.',
+        acceptanceCriteria: [
+          'Codebase structure and architecture is understood',
+          'README.md Technical Design Document has been thoroughly reviewed',
+          'Existing patterns and conventions are identified',
+          'Dependencies and integration points are mapped',
+          'Project requirements and constraints are understood from the technical design'
+        ],
+        guardrails: [
+          'Do not make any code changes during this review phase',
+          'Take notes on patterns to follow',
+          'Identify areas that need special attention',
+          'Reference the Technical Design Document for architectural decisions'
+        ],
+        estimatedHours: 1,
+        tags: ['setup', 'review']
+      },
+      {
         title: 'Set up development environment',
         description: 'Configure local development environment with necessary tools and dependencies',
         acceptanceCriteria: [
@@ -852,7 +873,9 @@ Generate 5-15 subtasks that cover the entire execution plan in proper dependency
    * Build prompt for task splitting
    */
   private buildSplitPrompt(subtask: Subtask): string {
-    return `Split this large task into 2-4 smaller, atomic tasks. Each task should be completable in under 2 hours and affect only a single component or file.
+    return `**IMPORTANT: Before starting any task, first review the entire codebase and learn it thoroughly. Pay special attention to the README.md file which contains the comprehensive Technical Design Document (starting from section "# Technical Design Document"). This document outlines the complete architecture, requirements, and implementation guidelines for the ChopChop project.**
+
+Split this large task into 2-4 smaller, atomic tasks. Each task should be completable in under 2 hours and affect only a single component or file.
 
 **ORIGINAL TASK:**
 Title: ${subtask.title}
@@ -927,10 +950,13 @@ Split the task now:`;
 
     return [
       {
-        title: `${originalTask.title} - Setup & Foundation`,
-        description: `Initial setup and foundation work for: ${originalTask.description}`,
-        acceptanceCriteria: originalTask.acceptanceCriteria.slice(0, halfCriteria),
-        guardrails: originalTask.guardrails,
+        title: `First review codebase, then ${originalTask.title} - Setup & Foundation`,
+        description: `IMPORTANT: Before starting, first review the entire codebase and README.md Technical Design Document. Then proceed with initial setup and foundation work for: ${originalTask.description}`,
+        acceptanceCriteria: [
+          'Reviewed entire codebase and README.md Technical Design Document',
+          ...originalTask.acceptanceCriteria.slice(0, halfCriteria)
+        ],
+        guardrails: [...originalTask.guardrails, 'Follow patterns established in codebase review and Technical Design Document'],
         estimatedHours: halfHours,
         isTooBig: false,
         tags: [...originalTask.tags, 'setup'],
@@ -939,9 +965,9 @@ Split the task now:`;
       },
       {
         title: `${originalTask.title} - Implementation & Testing`,
-        description: `Complete implementation and testing for: ${originalTask.description}`,
+        description: `Complete implementation and testing for: ${originalTask.description}. Ensure all work follows the architectural patterns and requirements identified in the README.md Technical Design Document.`,
         acceptanceCriteria: originalTask.acceptanceCriteria.slice(halfCriteria),
-        guardrails: originalTask.guardrails,
+        guardrails: [...originalTask.guardrails, 'Adhere to architecture guidelines from README.md Technical Design Document'],
         estimatedHours: originalTask.estimatedHours - halfHours,
         isTooBig: false,
         tags: [...originalTask.tags, 'implementation'],
