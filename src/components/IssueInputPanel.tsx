@@ -203,15 +203,15 @@ export const IssueInputPanel: React.FC = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Additional Context (Optional)
+              Additional Context (Optional, Markdown)
               <span className="text-gray-500 text-xs ml-2">
-                Add context from parent issues or related information
+                Add context from parent issues or related information in markdown format
               </span>
             </label>
             <textarea
               value={additionalContext}
               onChange={(e) => setAdditionalContext(e.target.value)}
-              placeholder="Provide any additional context that might help with breaking down this issue. For example, context from a parent issue that this is a sub-task of..."
+              placeholder="Provide any additional context in markdown format that might help with breaking down this issue. For example, context from a parent issue that this is a sub-task of..."
               rows={4}
               className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-vertical text-sm"
             />
