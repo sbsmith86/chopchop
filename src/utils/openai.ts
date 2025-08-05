@@ -120,7 +120,8 @@ export class OpenAIClient {
         content: content.trim(),
         steps,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
+        instructions: issue.additionalContext // Store instructions from original issue
       };
 
     } catch (error) {
@@ -555,7 +556,8 @@ ${answeredQuestions || 'No additional clarifications provided'}
         }
       ],
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      instructions: issue.additionalContext // Store instructions from original issue
     };
   }
 

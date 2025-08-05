@@ -73,6 +73,7 @@ export const SummaryApprovalPanel: React.FC = () => {
         state.subtasks,
         parentTitle,
         parentUrl,
+        state.executionPlan?.instructions, // Pass instructions from execution plan
         handleProgress
       );
 
@@ -267,6 +268,32 @@ ${task.isTooBig ? '⚠️ **Warning:** This task may be too large and should be 
                 <p className="text-sm text-green-700 mt-1">
                   {state.subtasks.length} issues will be created in this repository
                 </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Instructions Context */}
+        {state.executionPlan?.instructions && (
+          <div className="mb-8 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+            <div className="flex items-start space-x-3">
+              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <span className="text-blue-600">📋</span>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-blue-900 mb-2">
+                  Instructions & Context Included
+                </h3>
+                <p className="text-sm text-blue-700 leading-relaxed">
+                  Each GitHub issue will include the original instructions and context from the plan to ensure developers have all necessary information.
+                </p>
+                <div className="mt-3 p-3 bg-blue-100 rounded-lg max-h-24 overflow-y-auto">
+                  <p className="text-xs text-blue-800 font-mono">
+                    {state.executionPlan.instructions.length > 200 
+                      ? `${state.executionPlan.instructions.substring(0, 200)}...` 
+                      : state.executionPlan.instructions}
+                  </p>
+                </div>
               </div>
             </div>
           </div>

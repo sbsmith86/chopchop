@@ -41,6 +41,7 @@ export interface ExecutionPlan {
   steps: PlanStep[];
   createdAt: Date;
   updatedAt: Date;
+  instructions?: string; // Instructions/context from original issue (README, coding standards, etc.)
 }
 
 export interface PlanStep {

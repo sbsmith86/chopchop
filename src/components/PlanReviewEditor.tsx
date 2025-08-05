@@ -69,7 +69,8 @@ export const PlanReviewEditor: React.FC = () => {
         content: planContent,
         steps: state.executionPlan?.steps || [],
         createdAt: state.executionPlan?.createdAt || new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
+        instructions: state.executionPlan?.instructions // Preserve instructions
       };
 
       // Save the plan to state
@@ -112,7 +113,8 @@ export const PlanReviewEditor: React.FC = () => {
         content: planContent,
         steps: state.executionPlan?.steps || [],
         createdAt: state.executionPlan?.createdAt || new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
+        instructions: state.executionPlan?.instructions // Preserve instructions
       };
 
       // Save the plan to state
