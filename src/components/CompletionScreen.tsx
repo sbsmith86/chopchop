@@ -35,7 +35,7 @@ export const CompletionScreen: React.FC<CompletionScreenProps> = ({
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-gradient-to-br from-blue-50 to-indigo-100 p-6 rounded-xl border border-blue-200 shadow-sm">
           <div className="flex items-center space-x-3">
             <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -68,37 +68,23 @@ export const CompletionScreen: React.FC<CompletionScreenProps> = ({
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-purple-50 to-violet-100 p-6 rounded-xl border border-purple-200 shadow-sm">
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-              <span className="text-purple-600 text-xl">🎯</span>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-purple-600">
-                {subtasks.filter(task => !task.isTooBig).length}
+        {tooBigTasksCount > 0 && (
+          <div className="bg-gradient-to-br from-orange-50 to-yellow-100 p-6 rounded-xl border border-orange-200 shadow-sm">
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                <span className="text-orange-600 text-xl">⚠️</span>
               </div>
-              <div className="text-sm font-medium text-purple-800">
-                Atomic Tasks
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-br from-orange-50 to-yellow-100 p-6 rounded-xl border border-orange-200 shadow-sm">
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-              <span className="text-orange-600 text-xl">⚠️</span>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-orange-600">
-                {tooBigTasksCount}
-              </div>
-              <div className="text-sm font-medium text-orange-800">
-                Had Warnings
+              <div>
+                <div className="text-2xl font-bold text-orange-600">
+                  {tooBigTasksCount}
+                </div>
+                <div className="text-sm font-medium text-orange-800">
+                  Had Warnings
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Repository Link */}

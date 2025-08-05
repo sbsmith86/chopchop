@@ -175,54 +175,40 @@ ${task.isTooBig ? '⚠️ **Warning:** This task may be too large and should be 
         </p>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div className="bg-gradient-to-br from-blue-50 to-indigo-100 p-6 rounded-xl border border-blue-200 shadow-sm">
             <div className="flex items-center space-x-3">
               <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <span className="text-blue-600 text-xl">📊</span>
+                <span className="text-blue-600 text-xl">📋</span>
               </div>
               <div>
                 <div className="text-2xl font-bold text-blue-600">
                   {state.subtasks.length}
                 </div>
                 <div className="text-sm font-medium text-blue-800">
-                  Total Subtasks
+                  Tasks Created
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-green-50 to-emerald-100 p-6 rounded-xl border border-green-200 shadow-sm">
-            <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <span className="text-green-600 text-xl">✅</span>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-green-600">
-                  {state.subtasks.filter(task => !task.isTooBig).length}
+          {state.subtasks.filter(task => task.isTooBig).length > 0 && (
+            <div className="bg-gradient-to-br from-orange-50 to-yellow-100 p-6 rounded-xl border border-orange-200 shadow-sm">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                  <span className="text-orange-600 text-xl">⚠️</span>
                 </div>
-                <div className="text-sm font-medium text-green-800">
-                  Atomic Tasks
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-br from-orange-50 to-yellow-100 p-6 rounded-xl border border-orange-200 shadow-sm">
-            <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                <span className="text-orange-600 text-xl">⚠️</span>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-orange-600">
-                  {state.subtasks.filter(task => task.isTooBig).length}
-                </div>
-                <div className="text-sm font-medium text-orange-800">
-                  May Need Splitting
+                <div>
+                  <div className="text-2xl font-bold text-orange-600">
+                    {state.subtasks.filter(task => task.isTooBig).length}
+                  </div>
+                  <div className="text-sm font-medium text-orange-800">
+                    Need Review
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Issue Details */}
