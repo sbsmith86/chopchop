@@ -563,7 +563,9 @@ ${answeredQuestions || 'No additional clarifications provided'}
    * Builds prompt for subtask generation with dependency analysis
    */
   private buildSubtaskPrompt(plan: ExecutionPlan): string {
-    return `Break down this execution plan into atomic, actionable subtasks with proper dependency ordering. Each subtask should be completable in under 2 hours and affect only a single component or file.
+    return `**IMPORTANT: Before starting any task, first review the entire codebase and learn it thoroughly. Then reference the coding standards in coding-standards.instructions.md to understand the expected patterns and practices.**
+
+Break down this execution plan into atomic, actionable subtasks with proper dependency ordering. Each subtask should be completable in under 2 hours and affect only a single component or file.
 
 **EXECUTION PLAN:**
 ${plan.content}
@@ -757,6 +759,23 @@ Generate 5-15 subtasks that cover the entire execution plan in proper dependency
   private getFallbackSubtasks(): Subtask[] {
     const baseSubtasks = [
       {
+        title: 'First review the entire codebase and learn it',
+        description: 'Before starting any implementation, thoroughly review the entire codebase to understand the existing patterns, architecture, and coding standards as defined in coding-standards.instructions.md. This foundational step ensures all subsequent work aligns with the project structure.',
+        acceptanceCriteria: [
+          'Codebase structure and architecture is understood',
+          'Coding standards from coding-standards.instructions.md are reviewed',
+          'Existing patterns and conventions are identified',
+          'Dependencies and integration points are mapped'
+        ],
+        guardrails: [
+          'Do not make any code changes during this review phase',
+          'Take notes on patterns to follow',
+          'Identify areas that need special attention'
+        ],
+        estimatedHours: 1,
+        tags: ['setup', 'review']
+      },
+      {
         title: 'Set up development environment',
         description: 'Configure local development environment with necessary tools and dependencies',
         acceptanceCriteria: [
@@ -852,7 +871,9 @@ Generate 5-15 subtasks that cover the entire execution plan in proper dependency
    * Build prompt for task splitting
    */
   private buildSplitPrompt(subtask: Subtask): string {
-    return `Split this large task into 2-4 smaller, atomic tasks. Each task should be completable in under 2 hours and affect only a single component or file.
+    return `**IMPORTANT: Before starting any task, first review the entire codebase and learn it thoroughly. Then reference the coding standards in coding-standards.instructions.md to understand the expected patterns and practices.**
+
+Split this large task into 2-4 smaller, atomic tasks. Each task should be completable in under 2 hours and affect only a single component or file.
 
 **ORIGINAL TASK:**
 Title: ${subtask.title}
@@ -927,10 +948,13 @@ Split the task now:`;
 
     return [
       {
-        title: `${originalTask.title} - Setup & Foundation`,
-        description: `Initial setup and foundation work for: ${originalTask.description}`,
-        acceptanceCriteria: originalTask.acceptanceCriteria.slice(0, halfCriteria),
-        guardrails: originalTask.guardrails,
+        title: `First review codebase, then ${originalTask.title} - Setup & Foundation`,
+        description: `IMPORTANT: Before starting, first review the entire codebase and coding standards in coding-standards.instructions.md. Then proceed with initial setup and foundation work for: ${originalTask.description}`,
+        acceptanceCriteria: [
+          'Reviewed entire codebase and coding standards',
+          ...originalTask.acceptanceCriteria.slice(0, halfCriteria)
+        ],
+        guardrails: [...originalTask.guardrails, 'Follow patterns established in codebase review'],
         estimatedHours: halfHours,
         isTooBig: false,
         tags: [...originalTask.tags, 'setup'],
@@ -939,9 +963,9 @@ Split the task now:`;
       },
       {
         title: `${originalTask.title} - Implementation & Testing`,
-        description: `Complete implementation and testing for: ${originalTask.description}`,
+        description: `Complete implementation and testing for: ${originalTask.description}. Ensure all work follows the coding standards and patterns identified in the codebase review.`,
         acceptanceCriteria: originalTask.acceptanceCriteria.slice(halfCriteria),
-        guardrails: originalTask.guardrails,
+        guardrails: [...originalTask.guardrails, 'Adhere to coding standards from coding-standards.instructions.md'],
         estimatedHours: originalTask.estimatedHours - halfHours,
         isTooBig: false,
         tags: [...originalTask.tags, 'implementation'],
