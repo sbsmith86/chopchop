@@ -12,6 +12,7 @@ function SubtaskCard({
   index,
   onUpdate,
   onSplit,
+  onDelete,
   dependsOn,
   openaiApiKey
 }: {
@@ -19,12 +20,14 @@ function SubtaskCard({
   index: number;
   onUpdate: (subtask: Subtask) => void;
   onSplit: (originalId: string, newSubtasks: Subtask[]) => void;
+  onDelete: (subtaskId: string) => void;
   dependsOn: string[];
   openaiApiKey?: string;
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedSubtask, setEditedSubtask] = useState(subtask);
   const [showSplitModal, setShowSplitModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const handleSave = () => {
     onUpdate(editedSubtask);
@@ -39,6 +42,11 @@ function SubtaskCard({
   const handleSplit = (newSubtasks: Subtask[]) => {
     onSplit(subtask.id, newSubtasks);
     setShowSplitModal(false);
+  };
+
+  const handleDelete = () => {
+    onDelete(subtask.id);
+    setShowDeleteConfirm(false);
   };
 
   return (
@@ -181,6 +189,14 @@ function SubtaskCard({
               >
                 <span className="text-sm">✏️</span>
               </button>
+
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="p-2 text-red-400 hover:text-red-600 hover:bg-red-100 rounded-lg transition-all"
+                title="Delete task"
+              >
+                <span className="text-sm">🗑️</span>
+              </button>
             </div>
           )}
         </div>
@@ -194,6 +210,45 @@ function SubtaskCard({
         onSplit={handleSplit}
         openaiApiKey={openaiApiKey}
       />
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <span className="text-red-600 text-lg">⚠️</span>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Delete Task</h3>
+                  <p className="text-sm text-gray-600">This action cannot be undone.</p>
+                </div>
+              </div>
+              
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm font-medium text-gray-900 mb-1">{subtask.title}</p>
+                <p className="text-xs text-gray-600">{subtask.description.substring(0, 100)}{subtask.description.length > 100 && '...'}</p>
+              </div>
+
+              <div className="flex items-center justify-end space-x-3">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDelete}
+                  className="px-4 py-2 bg-red-500 text-white font-medium rounded-xl hover:bg-red-600 transition-colors"
+                >
+                  Delete Task
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
@@ -264,6 +319,13 @@ export const SubtaskListPanel: React.FC = () => {
    */
   const handleSplitSubtask = (originalId: string, newSubtasks: Subtask[]) => {
     dispatch({ type: 'SPLIT_SUBTASK', payload: { originalId, newSubtasks } });
+  };
+
+  /**
+   * Handle subtask deletion
+   */
+  const handleDeleteSubtask = (subtaskId: string) => {
+    dispatch({ type: 'DELETE_SUBTASK', payload: subtaskId });
   };
 
   /**
@@ -419,6 +481,7 @@ export const SubtaskListPanel: React.FC = () => {
                       index={index}
                       onUpdate={handleUpdateSubtask}
                       onSplit={handleSplitSubtask}
+                      onDelete={handleDeleteSubtask}
                       dependsOn={getDependencies(index)}
                       openaiApiKey={state.config?.openaiApiKey}
                     />

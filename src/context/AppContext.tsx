@@ -50,6 +50,7 @@ type AppAction =
   | { type: 'SET_SUBTASKS'; payload: Subtask[] }
   | { type: 'UPDATE_SUBTASK'; payload: Subtask }
   | { type: 'SPLIT_SUBTASK'; payload: { originalId: string; newSubtasks: Subtask[] } }
+  | { type: 'DELETE_SUBTASK'; payload: string }
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_STEP'; payload: number }
@@ -126,6 +127,24 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
         ...state.subtasks.slice(originalIndex + 1).map(task => ({
           ...task,
           order: task.order + newSubtasks.length - 1
+        }))
+      ];
+
+      return { ...state, subtasks: updatedSubtasks };
+    }
+
+    case 'DELETE_SUBTASK': {
+      const taskId = action.payload;
+      const taskIndex = state.subtasks.findIndex(task => task.id === taskId);
+
+      if (taskIndex === -1) return state;
+
+      // Remove the task and reorder remaining tasks
+      const updatedSubtasks = [
+        ...state.subtasks.slice(0, taskIndex),
+        ...state.subtasks.slice(taskIndex + 1).map(task => ({
+          ...task,
+          order: task.order > taskIndex ? task.order - 1 : task.order
         }))
       ];
 
