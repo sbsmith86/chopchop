@@ -565,7 +565,7 @@ ${answeredQuestions || 'No additional clarifications provided'}
    * Builds prompt for subtask generation with dependency analysis
    */
   private buildSubtaskPrompt(plan: ExecutionPlan): string {
-    return `**IMPORTANT: Before starting any task, first review the entire codebase and learn it thoroughly. Pay special attention to the README.md file which contains the comprehensive Technical Design Document (starting from section "# Technical Design Document"). This document outlines the complete architecture, requirements, and implementation guidelines for the ChopChop project.**
+    return `Pay special attention to the README.md file which contains the comprehensive Technical Design Document (starting from section "# Technical Design Document"). This document outlines the complete architecture, requirements, and implementation guidelines for the ChopChop project.**
 
 Break down this execution plan into atomic, actionable subtasks with proper dependency ordering. Each subtask should be completable in under 2 hours and affect only a single component or file.
 
@@ -573,6 +573,7 @@ Break down this execution plan into atomic, actionable subtasks with proper depe
 ${plan.content}
 
 **DEPENDENCY ORDERING REQUIREMENTS:**
+- Review the entire codebase and learn it thoroughly.
 - Analyze what each task needs from previous tasks to succeed
 - Order tasks so dependencies are always completed first
 - Foundation/setup tasks must come before implementation tasks
