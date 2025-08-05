@@ -9,6 +9,7 @@ export interface GitHubIssue {
   url?: string;
   number?: number;
   repository?: string;
+  additionalContext?: string;
 }
 
 export interface GitHubIssueResponse {
