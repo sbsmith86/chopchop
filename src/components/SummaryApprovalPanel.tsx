@@ -4,6 +4,15 @@ import { CreatedIssue, IssueCreationProgress } from '../types';
 import { GitHubClient } from '../utils/github';
 import { IssueCreationProgressComponent } from './IssueCreationProgressComponent';
 import { CompletionScreen } from './CompletionScreen';
+import { 
+  ClipboardListIcon, 
+  ExclamationTriangleIcon, 
+  DocumentIcon, 
+  ExternalLinkIcon, 
+  RocketLaunchIcon,
+  DocumentArrowDownIcon,
+  HomeIcon
+} from './ui/Icons';
 
 /**
  * Summary and approval panel component
@@ -175,54 +184,40 @@ ${task.isTooBig ? '⚠️ **Warning:** This task may be too large and should be 
         </p>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div className="bg-gradient-to-br from-blue-50 to-indigo-100 p-6 rounded-xl border border-blue-200 shadow-sm">
             <div className="flex items-center space-x-3">
               <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <span className="text-blue-600 text-xl">📊</span>
+                <ClipboardListIcon className="w-6 h-6 text-blue-600" />
               </div>
               <div>
                 <div className="text-2xl font-bold text-blue-600">
                   {state.subtasks.length}
                 </div>
                 <div className="text-sm font-medium text-blue-800">
-                  Total Subtasks
+                  Tasks Created
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-green-50 to-emerald-100 p-6 rounded-xl border border-green-200 shadow-sm">
-            <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <span className="text-green-600 text-xl">✅</span>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-green-600">
-                  {state.subtasks.filter(task => !task.isTooBig).length}
+          {state.subtasks.filter(task => task.isTooBig).length > 0 && (
+            <div className="bg-gradient-to-br from-orange-50 to-yellow-100 p-6 rounded-xl border border-orange-200 shadow-sm">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                  <ExclamationTriangleIcon className="w-6 h-6 text-orange-600" />
                 </div>
-                <div className="text-sm font-medium text-green-800">
-                  Atomic Tasks
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-br from-orange-50 to-yellow-100 p-6 rounded-xl border border-orange-200 shadow-sm">
-            <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                <span className="text-orange-600 text-xl">⚠️</span>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-orange-600">
-                  {state.subtasks.filter(task => task.isTooBig).length}
-                </div>
-                <div className="text-sm font-medium text-orange-800">
-                  May Need Splitting
+                <div>
+                  <div className="text-2xl font-bold text-orange-600">
+                    {state.subtasks.filter(task => task.isTooBig).length}
+                  </div>
+                  <div className="text-sm font-medium text-orange-800">
+                    Need Review
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Issue Details */}
@@ -230,7 +225,7 @@ ${task.isTooBig ? '⚠️ **Warning:** This task may be too large and should be 
           <div className="mb-8 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
             <div className="flex items-start space-x-3">
               <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <span className="text-blue-600">📋</span>
+                <DocumentIcon className="w-5 h-5 text-blue-600" />
               </div>
               <div className="flex-1">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">
@@ -246,7 +241,7 @@ ${task.isTooBig ? '⚠️ **Warning:** This task may be too large and should be 
                     rel="noopener noreferrer"
                     className="inline-flex items-center px-3 py-1 text-sm font-medium text-blue-700 bg-blue-100 rounded-lg hover:bg-blue-200 transition-colors"
                   >
-                    <span className="mr-1">🔗</span>
+                    <ExternalLinkIcon className="w-4 h-4 mr-1" />
                     View on GitHub →
                   </a>
                 )}
@@ -260,7 +255,7 @@ ${task.isTooBig ? '⚠️ **Warning:** This task may be too large and should be 
           <div className="mb-8 p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100">
             <div className="flex items-start space-x-3">
               <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <span className="text-green-600">🎯</span>
+                <HomeIcon className="w-5 h-5 text-green-600" />
               </div>
               <div className="flex-1">
                 <h3 className="text-sm font-semibold text-green-900 mb-2">
@@ -304,7 +299,8 @@ ${task.isTooBig ? '⚠️ **Warning:** This task may be too large and should be 
                         </span>
                         {task.isTooBig && (
                           <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 rounded-full">
-                            ⚠️ Too Big
+                            <ExclamationTriangleIcon className="w-3 h-3 mr-1" />
+                            Too Big
                           </span>
                         )}
                       </div>
@@ -326,7 +322,7 @@ ${task.isTooBig ? '⚠️ **Warning:** This task may be too large and should be 
           <div className="mb-8 p-6 bg-gradient-to-r from-orange-50 to-yellow-50 border-l-4 border-orange-400 rounded-xl">
             <div className="flex items-start space-x-3">
               <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <span className="text-orange-600">⚠️</span>
+                <ExclamationTriangleIcon className="w-5 h-5 text-orange-600" />
               </div>
               <div className="flex-1">
                 <h3 className="text-base font-semibold text-orange-800 mb-2">
@@ -347,7 +343,7 @@ ${task.isTooBig ? '⚠️ **Warning:** This task may be too large and should be 
             onClick={exportAsMarkdown}
             className="inline-flex items-center px-6 py-3 text-base font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm"
           >
-            <span className="mr-2">📄</span>
+            <DocumentArrowDownIcon className="w-5 h-5 mr-2" />
             Export as Markdown
           </button>
 
@@ -365,7 +361,7 @@ ${task.isTooBig ? '⚠️ **Warning:** This task may be too large and should be 
               </>
             ) : (
               <>
-                <span className="mr-2">🚀</span>
+                <RocketLaunchIcon className="w-5 h-5 mr-2" />
                 Create {state.subtasks.length} GitHub Issues
               </>
             )}
