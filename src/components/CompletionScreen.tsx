@@ -1,5 +1,15 @@
 import React from 'react';
 import { CreatedIssue, Subtask } from '../types';
+import { 
+  ClipboardListIcon, 
+  ClockIcon, 
+  ExclamationTriangleIcon, 
+  HomeIcon, 
+  ExternalLinkIcon, 
+  DocumentArrowDownIcon,
+  RocketLaunchIcon,
+  SparklesIcon
+} from './ui/Icons';
 
 interface CompletionScreenProps {
   createdIssues: CreatedIssue[];
@@ -24,7 +34,7 @@ export const CompletionScreen: React.FC<CompletionScreenProps> = ({
       {/* Success Header */}
       <div className="text-center mb-8">
         <div className="w-20 h-20 bg-gradient-to-br from-green-100 to-emerald-200 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
-          <span className="text-4xl">🎉</span>
+          <SparklesIcon className="w-10 h-10 text-green-600" />
         </div>
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
           Issues Created Successfully!
@@ -39,7 +49,7 @@ export const CompletionScreen: React.FC<CompletionScreenProps> = ({
         <div className="bg-gradient-to-br from-blue-50 to-indigo-100 p-6 rounded-xl border border-blue-200 shadow-sm">
           <div className="flex items-center space-x-3">
             <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-              <span className="text-blue-600 text-xl">📋</span>
+              <ClipboardListIcon className="w-6 h-6 text-blue-600" />
             </div>
             <div>
               <div className="text-2xl font-bold text-blue-600">
@@ -55,7 +65,7 @@ export const CompletionScreen: React.FC<CompletionScreenProps> = ({
         <div className="bg-gradient-to-br from-green-50 to-emerald-100 p-6 rounded-xl border border-green-200 shadow-sm">
           <div className="flex items-center space-x-3">
             <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-              <span className="text-green-600 text-xl">⏱️</span>
+              <ClockIcon className="w-6 h-6 text-green-600" />
             </div>
             <div>
               <div className="text-2xl font-bold text-green-600">
@@ -72,7 +82,7 @@ export const CompletionScreen: React.FC<CompletionScreenProps> = ({
           <div className="bg-gradient-to-br from-orange-50 to-yellow-100 p-6 rounded-xl border border-orange-200 shadow-sm">
             <div className="flex items-center space-x-3">
               <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                <span className="text-orange-600 text-xl">⚠️</span>
+                <ExclamationTriangleIcon className="w-6 h-6 text-orange-600" />
               </div>
               <div>
                 <div className="text-2xl font-bold text-orange-600">
@@ -92,7 +102,7 @@ export const CompletionScreen: React.FC<CompletionScreenProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-              <span className="text-blue-600 text-xl">🏠</span>
+              <HomeIcon className="w-6 h-6 text-blue-600" />
             </div>
             <div>
               <h3 className="text-lg font-semibold text-blue-900">Repository</h3>
@@ -105,7 +115,7 @@ export const CompletionScreen: React.FC<CompletionScreenProps> = ({
             rel="noopener noreferrer"
             className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
           >
-            <span className="mr-2">🔗</span>
+            <ExternalLinkIcon className="w-4 h-4 mr-2" />
             View All Issues
           </a>
         </div>
@@ -131,7 +141,8 @@ export const CompletionScreen: React.FC<CompletionScreenProps> = ({
                       </span>
                       {subtask?.isTooBig && (
                         <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 rounded-full">
-                          ⚠️ Was flagged as large
+                          <ExclamationTriangleIcon className="w-3 h-3 mr-1" />
+                          Was flagged as large
                         </span>
                       )}
                     </div>
@@ -143,7 +154,7 @@ export const CompletionScreen: React.FC<CompletionScreenProps> = ({
                   rel="noopener noreferrer"
                   className="inline-flex items-center px-3 py-1 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
                 >
-                  <span className="mr-1">🔗</span>
+                  <ExternalLinkIcon className="w-4 h-4 mr-1" />
                   View Issue
                 </a>
               </div>
@@ -158,7 +169,7 @@ export const CompletionScreen: React.FC<CompletionScreenProps> = ({
           onClick={onExportSummary}
           className="inline-flex items-center px-6 py-3 text-base font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm"
         >
-          <span className="mr-2">📄</span>
+          <DocumentArrowDownIcon className="w-5 h-5 mr-2" />
           Export Summary
         </button>
 
@@ -166,7 +177,7 @@ export const CompletionScreen: React.FC<CompletionScreenProps> = ({
           onClick={onStartNew}
           className="inline-flex items-center px-6 py-3 text-base font-semibold text-white bg-gradient-to-r from-blue-500 to-indigo-600 border border-transparent rounded-xl hover:from-blue-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-lg transition-all"
         >
-          <span className="mr-2">🚀</span>
+          <RocketLaunchIcon className="w-5 h-5 mr-2" />
           Start New Decomposition
         </button>
       </div>
