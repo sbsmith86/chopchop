@@ -39,13 +39,17 @@ export const SubtaskSplitModal: React.FC<SubtaskSplitModalProps> = ({
       setError('Failed to generate suggestions. You can manually create split tasks below.');
       setSplitTasks([
         {
-          title: `First review codebase, then ${subtask.title} - Part 1`,
-          description: 'IMPORTANT: Before starting, first review the entire codebase and README.md Technical Design Document. Then proceed with the first part of the split task.',
+          title: `${subtask.title} - Part 1`,
+          description:
+            'Before starting, review the entire codebase and README.md Technical Design Document. Then proceed with the first part of this split task.',
           acceptanceCriteria: [
             'Reviewed entire codebase and README.md Technical Design Document',
             ...subtask.acceptanceCriteria.slice(0, Math.ceil(subtask.acceptanceCriteria.length / 2))
           ],
-          guardrails: [...subtask.guardrails, 'Follow patterns established in codebase review and Technical Design Document'],
+          guardrails: [
+            ...subtask.guardrails,
+            'Follow patterns established in codebase review and Technical Design Document'
+          ],
           estimatedHours: Math.ceil(subtask.estimatedHours / 2),
           isTooBig: false,
           tags: subtask.tags,
@@ -54,9 +58,13 @@ export const SubtaskSplitModal: React.FC<SubtaskSplitModalProps> = ({
         },
         {
           title: `${subtask.title} - Part 2`,
-          description: 'Second part of the split task. Ensure all work follows the architectural patterns and requirements identified in the README.md Technical Design Document.',
+          description:
+            'Continue the task, ensuring all work follows the architectural patterns and requirements identified in the README.md Technical Design Document.',
           acceptanceCriteria: subtask.acceptanceCriteria.slice(Math.ceil(subtask.acceptanceCriteria.length / 2)),
-          guardrails: [...subtask.guardrails, 'Adhere to architecture guidelines from README.md Technical Design Document'],
+          guardrails: [
+            ...subtask.guardrails,
+            'Adhere to architecture guidelines from README.md Technical Design Document'
+          ],
           estimatedHours: Math.floor(subtask.estimatedHours / 2),
           isTooBig: false,
           tags: subtask.tags,
