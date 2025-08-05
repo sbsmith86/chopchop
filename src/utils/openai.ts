@@ -14,7 +14,7 @@ export class OpenAIClient {
   /**
    * Generate clarification questions for an issue using OpenAI
    */
-  async generateClarificationQuestions(issue: { issueTitle: string; issueBody: string }): Promise<string[]> {
+  async generateClarificationQuestions(issue: { issueTitle: string; issueBody: string; additionalContext?: string }): Promise<string[]> {
     try {
       const prompt = this.buildClarificationPrompt(issue);
 
@@ -247,7 +247,7 @@ export class OpenAIClient {
 
   // PRIVATE HELPER METHODS
 
-  private buildClarificationPrompt(issue: { issueTitle: string; issueBody: string }): string {
+  private buildClarificationPrompt(issue: { issueTitle: string; issueBody: string; additionalContext?: string }): string {
     return `Analyze this GitHub issue and generate 3-5 specific clarification questions that would help break it down into actionable subtasks.
 
 **Issue Title:** ${issue.issueTitle}
@@ -255,12 +255,16 @@ export class OpenAIClient {
 **Issue Description:**
 ${issue.issueBody || 'No description provided'}
 
-**Instructions:**
+${issue.additionalContext ? `**Additional Context:**
+${issue.additionalContext}
+
+` : ''}**Instructions:**
 - Focus on identifying unclear requirements, missing technical details, and scope boundaries
 - Ask about dependencies, constraints, and acceptance criteria that aren't well defined
 - Consider user experience, interface specifics, and implementation approaches
 - Make questions specific to THIS issue, not generic project management questions
 - Each question should help clarify something that would affect how the work is broken down
+${issue.additionalContext ? '- Take into account the additional context provided when forming questions' : ''}
 
 **Format:** Return only the questions, one per line, ending with a question mark.
 
@@ -279,7 +283,7 @@ ${issue.issueBody || 'No description provided'}
       .filter((question, index, array) => array.indexOf(question) === index);
   }
 
-  private getFallbackQuestions(issue: { issueTitle: string; issueBody: string }): string[] {
+  private getFallbackQuestions(issue: { issueTitle: string; issueBody: string; additionalContext?: string }): string[] {
     const baseQuestions = [
       'What are the specific technical requirements for this feature?',
       'Are there any dependencies or constraints that should be considered?',
@@ -290,7 +294,8 @@ ${issue.issueBody || 'No description provided'}
 
     const title = issue.issueTitle.toLowerCase();
     const body = (issue.issueBody || '').toLowerCase();
-    const content = `${title} ${body}`;
+    const additionalContext = (issue.additionalContext || '').toLowerCase();
+    const content = `${title} ${body} ${additionalContext}`;
 
     const contextQuestions: string[] = [];
 
@@ -326,7 +331,10 @@ ${issue.issueBody || 'No description provided'}
 **Description:**
 ${issue.body || 'No description provided'}
 
-**CLARIFICATIONS PROVIDED:**
+${issue.additionalContext ? `**Additional Context:**
+${issue.additionalContext}
+
+` : ''}**CLARIFICATIONS PROVIDED:**
 ${answeredQuestions || 'No clarifications provided'}
 
 **REQUIREMENTS:**
@@ -334,6 +342,7 @@ ${answeredQuestions || 'No clarifications provided'}
 - Focus on practical implementation phases (setup, development, testing, deployment)
 - Include specific technical considerations based on the issue content
 - Consider the clarifications provided when planning implementation approach
+${issue.additionalContext ? '- Take into account the additional context provided when planning the implementation' : ''}
 - Make each step actionable and measurable
 - Include acceptance criteria for each major phase
 - Consider dependencies, risks, and prerequisites
@@ -438,7 +447,10 @@ Implementation plan for: ${issue.title}
 
 ${issue.body}
 
-## Clarifications Provided
+${issue.additionalContext ? `## Additional Context
+${issue.additionalContext}
+
+` : ''}## Clarifications Provided
 ${answeredQuestions || 'No additional clarifications provided'}
 
 ## Implementation Phases
@@ -947,7 +959,7 @@ Split the task now:`;
  */
 export async function generateClarificationQuestions(
   config: { apiKey: string },
-  issue: { issueTitle: string; issueBody: string }
+  issue: { issueTitle: string; issueBody: string; additionalContext?: string }
 ): Promise<string[]> {
   if (!config.apiKey) {
     throw new Error('OpenAI API key is required');

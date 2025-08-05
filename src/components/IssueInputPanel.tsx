@@ -10,6 +10,7 @@ import { GitHubIssue, ClarificationQuestion } from '../types';
 export const IssueInputPanel: React.FC = () => {
   const { state, setError, setLoading, nextStep, dispatch } = useAppContext();
   const [input, setInput] = useState('');
+  const [additionalContext, setAdditionalContext] = useState('');
   const [inputType, setInputType] = useState<'url' | 'markdown'>('url');
 
   React.useEffect(() => {
@@ -33,7 +34,7 @@ export const IssueInputPanel: React.FC = () => {
       
       const questionTexts = await generateClarificationQuestions(
         { apiKey: state.config.openaiApiKey },
-        { issueTitle: issue.title, issueBody: issue.body }
+        { issueTitle: issue.title, issueBody: issue.body, additionalContext: issue.additionalContext }
       );
 
       // Convert question texts to ClarificationQuestion objects
@@ -112,7 +113,8 @@ export const IssueInputPanel: React.FC = () => {
           body: githubIssue.body || '',
           url: githubIssue.url,
           number: githubIssue.number,
-          repository: state.config.githubRepo
+          repository: state.config.githubRepo,
+          additionalContext: additionalContext.trim() || undefined
         };
 
         dispatch({ type: 'SET_ISSUE', payload: issue });
@@ -125,7 +127,8 @@ export const IssueInputPanel: React.FC = () => {
           id: Date.now().toString(),
           title: 'Manual Input',
           body: input.trim(),
-          repository: state.config.githubRepo
+          repository: state.config.githubRepo,
+          additionalContext: additionalContext.trim() || undefined
         };
 
         dispatch({ type: 'SET_ISSUE', payload: issue });
@@ -181,17 +184,38 @@ export const IssueInputPanel: React.FC = () => {
 
         {/* Input area */}
         <div className="space-y-4">
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder={
-              inputType === 'url'
-                ? 'https://github.com/owner/repository/issues/123'
-                : 'Paste your issue content in markdown format...'
-            }
-            rows={12}
-            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-vertical font-mono text-sm"
-          />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {inputType === 'url' ? 'GitHub Issue URL' : 'Issue Content (Markdown)'}
+            </label>
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder={
+                inputType === 'url'
+                  ? 'https://github.com/owner/repository/issues/123'
+                  : 'Paste your issue content in markdown format...'
+              }
+              rows={8}
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-vertical font-mono text-sm"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Additional Context (Optional)
+              <span className="text-gray-500 text-xs ml-2">
+                Add context from parent issues or related information
+              </span>
+            </label>
+            <textarea
+              value={additionalContext}
+              onChange={(e) => setAdditionalContext(e.target.value)}
+              placeholder="Provide any additional context that might help with breaking down this issue. For example, context from a parent issue that this is a sub-task of..."
+              rows={4}
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-vertical text-sm"
+            />
+          </div>
 
           {inputType === 'url' && (
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
