@@ -7,7 +7,7 @@ import './App.css';
  * Main ChopChop application component
  * Modern, clean interface for GitHub issue decomposition
  */
-function App(): JSX.Element {
+function App(): React.JSX.Element {
   return (
     <AppProvider>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
