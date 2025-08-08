@@ -228,7 +228,11 @@ export class GitHubClient {
       ? `**Dependencies:** ${(subtask.dependsOn || []).join(', ')}\n`
       : '';
 
-    return `${parentSection}${sequence}${estimation}${dependencies}${tags}
+    const affectedFiles = (subtask.affectedFiles || []).length > 0
+      ? `**Affected Files/Modules:** ${(subtask.affectedFiles || []).map(file => `\`${file}\``).join(', ')}\n`
+      : '';
+
+    return `${parentSection}${sequence}${estimation}${dependencies}${affectedFiles}${tags}
 
 ## Description
 

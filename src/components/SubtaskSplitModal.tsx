@@ -54,7 +54,8 @@ export const SubtaskSplitModal: React.FC<SubtaskSplitModalProps> = ({
           isTooBig: false,
           tags: subtask.tags,
           dependsOn: subtask.dependsOn,
-          prerequisiteTaskIds: subtask.prerequisiteTaskIds
+          prerequisiteTaskIds: subtask.prerequisiteTaskIds,
+          affectedFiles: subtask.affectedFiles
         },
         {
           title: `${subtask.title} - Part 2`,
@@ -69,7 +70,8 @@ export const SubtaskSplitModal: React.FC<SubtaskSplitModalProps> = ({
           isTooBig: false,
           tags: subtask.tags,
           dependsOn: subtask.dependsOn,
-          prerequisiteTaskIds: subtask.prerequisiteTaskIds
+          prerequisiteTaskIds: subtask.prerequisiteTaskIds,
+          affectedFiles: subtask.affectedFiles
         }
       ]);
     } finally {
@@ -87,7 +89,8 @@ export const SubtaskSplitModal: React.FC<SubtaskSplitModalProps> = ({
       isTooBig: false,
       tags: subtask.tags,
       dependsOn: subtask.dependsOn,
-      prerequisiteTaskIds: subtask.prerequisiteTaskIds
+      prerequisiteTaskIds: subtask.prerequisiteTaskIds,
+      affectedFiles: []
     }]);
   };
 

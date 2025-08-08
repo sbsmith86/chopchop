@@ -589,6 +589,7 @@ ${plan.content}
 - Tags: 2-3 relevant tags for categorization
 - DependsOn: List of prerequisite task titles (what must be done first)
 - PrerequisiteTaskIds: Will be populated after ordering
+- AffectedFiles: List of specific files/modules that will be created, modified, or deleted
 
 **ATOMICITY RULES:**
 - Each task should have ONE primary action
@@ -623,7 +624,12 @@ Return ONLY a JSON array of subtasks in dependency order:
     ],
     "estimatedHours": 3,
     "tags": ["implementation", "backend"],
-    "dependsOn": ["Previous task title if any"]
+    "dependsOn": ["Previous task title if any"],
+    "affectedFiles": [
+      "src/components/ExampleComponent.tsx",
+      "src/utils/exampleUtil.ts",
+      "tests/example.test.ts"
+    ]
   }
 ]
 
@@ -666,7 +672,10 @@ Generate 5-15 subtasks that cover the entire execution plan in proper dependency
           estimatedHours: Math.min(Math.max(Number(task.estimatedHours) || 2, 1), 8),
           tags: Array.isArray(task.tags)
             ? task.tags.map(t => String(t).trim()).filter(t => t.length > 0)
-            : ['general']
+            : ['general'],
+          affectedFiles: Array.isArray(task.affectedFiles)
+            ? task.affectedFiles.map(f => String(f).trim()).filter(f => f.length > 0)
+            : []
         };
       });
 
@@ -697,7 +706,10 @@ Generate 5-15 subtasks that cover the entire execution plan in proper dependency
             acceptanceCriteria: currentTask.acceptanceCriteria || ['Task completed successfully'],
             guardrails: currentTask.guardrails || ['Follow existing patterns'],
             estimatedHours: currentTask.estimatedHours || 2,
-            tags: currentTask.tags || ['general']
+            tags: currentTask.tags || ['general'],
+            affectedFiles: currentTask.affectedFiles || [],
+            dependsOn: currentTask.dependsOn || [],
+            prerequisiteTaskIds: currentTask.prerequisiteTaskIds || []
           });
         }
 
@@ -709,7 +721,10 @@ Generate 5-15 subtasks that cover the entire execution plan in proper dependency
           acceptanceCriteria: ['Task completed successfully'],
           guardrails: ['Follow existing patterns'],
           estimatedHours: 2,
-          tags: ['general']
+          tags: ['general'],
+          affectedFiles: [],
+          dependsOn: [],
+          prerequisiteTaskIds: []
         };
       }
     }
@@ -722,7 +737,10 @@ Generate 5-15 subtasks that cover the entire execution plan in proper dependency
         acceptanceCriteria: currentTask.acceptanceCriteria || ['Task completed successfully'],
         guardrails: currentTask.guardrails || ['Follow existing patterns'],
         estimatedHours: currentTask.estimatedHours || 2,
-        tags: currentTask.tags || ['general']
+        tags: currentTask.tags || ['general'],
+        affectedFiles: currentTask.affectedFiles || [],
+        dependsOn: currentTask.dependsOn || [],
+        prerequisiteTaskIds: currentTask.prerequisiteTaskIds || []
       });
     }
 
@@ -778,7 +796,10 @@ Generate 5-15 subtasks that cover the entire execution plan in proper dependency
           'Reference the Technical Design Document for architectural decisions'
         ],
         estimatedHours: 1,
-        tags: ['setup', 'review']
+        tags: ['setup', 'review'],
+        affectedFiles: [],
+        dependsOn: [],
+        prerequisiteTaskIds: []
       },
       {
         title: 'Set up development environment',
@@ -794,7 +815,10 @@ Generate 5-15 subtasks that cover the entire execution plan in proper dependency
           'Test environment setup on clean machine'
         ],
         estimatedHours: 2,
-        tags: ['setup', 'environment']
+        tags: ['setup', 'environment'],
+        affectedFiles: ['package.json', '.env.example', 'README.md'],
+        dependsOn: [],
+        prerequisiteTaskIds: []
       },
       {
         title: 'Create core data models',
@@ -810,7 +834,10 @@ Generate 5-15 subtasks that cover the entire execution plan in proper dependency
           'Include data validation rules'
         ],
         estimatedHours: 3,
-        tags: ['backend', 'data']
+        tags: ['backend', 'data'],
+        affectedFiles: ['src/types/index.ts', 'src/models/', 'migrations/'],
+        dependsOn: [],
+        prerequisiteTaskIds: []
       },
       {
         title: 'Implement business logic',
@@ -827,7 +854,10 @@ Generate 5-15 subtasks that cover the entire execution plan in proper dependency
         ],
         estimatedHours: 6,
         isTooBig: true,
-        tags: ['implementation', 'core']
+        tags: ['implementation', 'core'],
+        affectedFiles: ['src/utils/', 'src/services/', 'src/components/'],
+        dependsOn: [],
+        prerequisiteTaskIds: []
       },
       {
         title: 'Create API endpoints',
@@ -843,7 +873,10 @@ Generate 5-15 subtasks that cover the entire execution plan in proper dependency
           'Add rate limiting if needed'
         ],
         estimatedHours: 4,
-        tags: ['api', 'backend']
+        tags: ['api', 'backend'],
+        affectedFiles: ['src/routes/', 'src/controllers/', 'src/middleware/'],
+        dependsOn: [],
+        prerequisiteTaskIds: []
       },
       {
         title: 'Add comprehensive testing',
@@ -859,7 +892,10 @@ Generate 5-15 subtasks that cover the entire execution plan in proper dependency
           'Mock external dependencies'
         ],
         estimatedHours: 4,
-        tags: ['testing', 'quality']
+        tags: ['testing', 'quality'],
+        affectedFiles: ['tests/', 'src/__tests__/', 'jest.config.js'],
+        dependsOn: [],
+        prerequisiteTaskIds: []
       }
     ];
 
@@ -902,7 +938,8 @@ Return ONLY a JSON array of split tasks:
     "title": "Specific task title",
     "description": "Detailed description",
     "acceptanceCriteria": ["criteria 1", "criteria 2"],
-    "estimatedHours": 2
+    "estimatedHours": 2,
+    "affectedFiles": ["src/specific/file.ts"]
   }
 ]
 
@@ -934,7 +971,10 @@ Split the task now:`;
           isTooBig: false, // Split tasks should not be too big
           tags: originalTask.tags, // Inherit original tags
           dependsOn: originalTask.dependsOn, // Inherit dependencies
-          prerequisiteTaskIds: originalTask.prerequisiteTaskIds
+          prerequisiteTaskIds: originalTask.prerequisiteTaskIds,
+          affectedFiles: Array.isArray(taskObj.affectedFiles)
+            ? (taskObj.affectedFiles as unknown[]).map((f: unknown) => String(f).trim())
+            : originalTask.affectedFiles // Inherit original affected files if not specified
         };
       });
 
@@ -964,7 +1004,8 @@ Split the task now:`;
         isTooBig: false,
         tags: [...originalTask.tags, 'setup'],
         dependsOn: originalTask.dependsOn,
-        prerequisiteTaskIds: originalTask.prerequisiteTaskIds
+        prerequisiteTaskIds: originalTask.prerequisiteTaskIds,
+        affectedFiles: originalTask.affectedFiles
       },
       {
         title: `${originalTask.title} - Implementation & Testing`,
@@ -975,7 +1016,8 @@ Split the task now:`;
         isTooBig: false,
         tags: [...originalTask.tags, 'implementation'],
         dependsOn: originalTask.dependsOn,
-        prerequisiteTaskIds: originalTask.prerequisiteTaskIds
+        prerequisiteTaskIds: originalTask.prerequisiteTaskIds,
+        affectedFiles: originalTask.affectedFiles
       }
     ];
   }
