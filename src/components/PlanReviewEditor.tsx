@@ -1,8 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import MDEditor from '@uiw/react-md-editor';
 import { useAppContext } from '../context/AppContext';
-import { ExecutionPlan } from '../types';
+import { ExecutionPlan, PlanStep } from '../types';
 import { OpenAIClient } from '../utils/openai';
+import { PlanStepManager } from './PlanStepManager';
+import { parseMarkdownToPlanSteps, planStepsToMarkdown } from '../utils/planParser';
 
 /**
  * Plan review editor component
@@ -11,8 +13,33 @@ import { OpenAIClient } from '../utils/openai';
 export const PlanReviewEditor: React.FC = () => {
   const { state, dispatch, setError, setLoading, nextStep, saveCurrentPlan } = useAppContext();
   const [planContent, setPlanContent] = useState('');
+  const [planSteps, setPlanSteps] = useState<PlanStep[]>([]);
   const [hasGenerated, setHasGenerated] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [viewMode, setViewMode] = useState<'markdown' | 'steps'>('markdown');
+
+  /**
+   * Handle plan steps changes and sync with markdown content
+   */
+  const handlePlanStepsChange = (updatedSteps: PlanStep[]) => {
+    setPlanSteps(updatedSteps);
+    const updatedContent = planStepsToMarkdown(updatedSteps, planContent);
+    setPlanContent(updatedContent);
+  };
+
+  /**
+   * Parse markdown content to plan steps when content changes
+   */
+  const handleContentChange = (value: string | undefined) => {
+    const newContent = value || '';
+    setPlanContent(newContent);
+    
+    // Parse steps from content if in markdown mode
+    if (viewMode === 'markdown') {
+      const parsedSteps = parseMarkdownToPlanSteps(newContent);
+      setPlanSteps(parsedSteps);
+    }
+  };
 
   /**
    * Generate execution plan using OpenAI
@@ -33,6 +60,14 @@ export const PlanReviewEditor: React.FC = () => {
 
       dispatch({ type: 'SET_EXECUTION_PLAN', payload: executionPlan });
       setPlanContent(executionPlan.content);
+      
+      // Initialize plan steps from the generated plan
+      if (executionPlan.steps && executionPlan.steps.length > 0) {
+        setPlanSteps(executionPlan.steps);
+      } else {
+        const parsedSteps = parseMarkdownToPlanSteps(executionPlan.content);
+        setPlanSteps(parsedSteps);
+      }
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to generate execution plan');
     } finally {
@@ -46,6 +81,13 @@ export const PlanReviewEditor: React.FC = () => {
       generatePlan();
     } else if (state.executionPlan) {
       setPlanContent(state.executionPlan.content);
+      // Initialize plan steps from execution plan or parse from content
+      if (state.executionPlan.steps && state.executionPlan.steps.length > 0) {
+        setPlanSteps(state.executionPlan.steps);
+      } else {
+        const parsedSteps = parseMarkdownToPlanSteps(state.executionPlan.content);
+        setPlanSteps(parsedSteps);
+      }
     }
   }, [state.issue, state.config, hasGenerated, state.executionPlan, generatePlan]);
 
@@ -67,7 +109,7 @@ export const PlanReviewEditor: React.FC = () => {
         title: state.executionPlan?.title || `Execution Plan: ${state.issue?.title}`,
         description: state.executionPlan?.description || 'User-edited execution plan',
         content: planContent,
-        steps: state.executionPlan?.steps || [],
+        steps: planSteps,
         createdAt: state.executionPlan?.createdAt || new Date(),
         updatedAt: new Date(),
         instructions: state.executionPlan?.instructions // Preserve instructions
@@ -111,7 +153,7 @@ export const PlanReviewEditor: React.FC = () => {
         title: state.executionPlan?.title || `Execution Plan: ${state.issue?.title}`,
         description: state.executionPlan?.description || 'User-edited execution plan',
         content: planContent,
-        steps: state.executionPlan?.steps || [],
+        steps: planSteps,
         createdAt: state.executionPlan?.createdAt || new Date(),
         updatedAt: new Date(),
         instructions: state.executionPlan?.instructions // Preserve instructions
@@ -232,7 +274,7 @@ export const PlanReviewEditor: React.FC = () => {
             </div>
           )}
 
-          {/* Markdown Editor */}
+          {/* Plan Editor */}
           {planContent && (
             <div className="space-y-6">
               <div className="flex justify-between items-center">
@@ -241,28 +283,66 @@ export const PlanReviewEditor: React.FC = () => {
                     Execution Plan
                   </h3>
                   <p className="text-sm text-gray-500 mt-1">
-                    Review and edit the plan using markdown formatting
+                    Review and edit the plan using markdown or structured steps
                   </p>
                 </div>
-                <button
-                  onClick={handleRegenerate}
-                  disabled={state.isLoading}
-                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm"
-                >
-                  <span className="mr-2">🔄</span>
-                  Regenerate
-                </button>
+                <div className="flex items-center space-x-3">
+                  {/* View mode toggle */}
+                  <div className="flex items-center bg-gray-100 rounded-lg p-1">
+                    <button
+                      onClick={() => setViewMode('markdown')}
+                      className={`px-3 py-1 text-sm font-medium rounded-md transition-all ${
+                        viewMode === 'markdown'
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      📝 Markdown
+                    </button>
+                    <button
+                      onClick={() => setViewMode('steps')}
+                      className={`px-3 py-1 text-sm font-medium rounded-md transition-all ${
+                        viewMode === 'steps'
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      📋 Steps
+                    </button>
+                  </div>
+                  <button
+                    onClick={handleRegenerate}
+                    disabled={state.isLoading}
+                    className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm"
+                  >
+                    <span className="mr-2">🔄</span>
+                    Regenerate
+                  </button>
+                </div>
               </div>
 
-              <div className="border border-gray-300 rounded-xl overflow-hidden shadow-sm">
-                <MDEditor
-                  value={planContent}
-                  onChange={(value) => setPlanContent(value || '')}
-                  preview="edit"
-                  height={500}
-                  data-color-mode="light"
-                />
-              </div>
+              {/* Markdown Editor */}
+              {viewMode === 'markdown' && (
+                <div className="border border-gray-300 rounded-xl overflow-hidden shadow-sm">
+                  <MDEditor
+                    value={planContent}
+                    onChange={handleContentChange}
+                    preview="edit"
+                    height={500}
+                    data-color-mode="light"
+                  />
+                </div>
+              )}
+
+              {/* Plan Steps Manager */}
+              {viewMode === 'steps' && (
+                <div className="border border-gray-300 rounded-xl p-6 shadow-sm">
+                  <PlanStepManager 
+                    steps={planSteps}
+                    onStepsChange={handlePlanStepsChange}
+                  />
+                </div>
+              )}
 
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-400 rounded-xl p-4">
                 <div className="flex items-start space-x-3">
@@ -276,6 +356,7 @@ export const PlanReviewEditor: React.FC = () => {
                       <li>• Include specific technologies, tools, and approaches</li>
                       <li>• Consider dependencies between different components</li>
                       <li>• Specify testing and validation approaches</li>
+                      <li>• Use "Steps" view to control granularity and mark grouped units</li>
                     </ul>
                   </div>
                 </div>

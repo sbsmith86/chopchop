@@ -180,13 +180,27 @@ export class OpenAIClient {
         throw new Error('No valid subtasks extracted from OpenAI response');
       }
 
-      // Add IDs, order, and apply "too big" detection
-      const subtasks = parsedSubtasks.map((task, index) => ({
-        id: `subtask-${Date.now()}-${index}`,
-        order: index,
-        isTooBig: this.detectTooBigTask(task),
-        ...task
-      }));
+      // Add IDs, order, and apply "too big" detection with grouping consideration
+      const subtasks = parsedSubtasks.map((task, index) => {
+        // Check if this subtask corresponds to a grouped unit from the plan
+        const relatedStep = plan.steps?.find(step => 
+          step.isGroupedUnit && (
+            task.title.toLowerCase().includes(step.title.toLowerCase()) ||
+            step.title.toLowerCase().includes(task.title.toLowerCase())
+          )
+        );
+        
+        const isTooBig = relatedStep?.allowSplit === false 
+          ? false // Don't mark as too big if user explicitly allows splitting for grouped unit
+          : this.detectTooBigTask(task);
+
+        return {
+          id: `subtask-${Date.now()}-${index}`,
+          order: index,
+          isTooBig,
+          ...task
+        };
+      });
 
       return subtasks;
 
@@ -562,23 +576,57 @@ ${answeredQuestions || 'No additional clarifications provided'}
   }
 
   /**
-   * Builds prompt for subtask generation with dependency analysis
+   * Builds prompt for subtask generation with dependency analysis and user granularity preferences
    */
   private buildSubtaskPrompt(plan: ExecutionPlan): string {
+    // Check if plan has structured steps with grouping information
+    const hasGroupedSteps = plan.steps && plan.steps.some(step => step.isGroupedUnit);
+    
+    let stepInstructions = '';
+    if (hasGroupedSteps) {
+      const groupedSteps = plan.steps!.filter(step => step.isGroupedUnit);
+      const groupedStepInfo = groupedSteps.map(step => 
+        `- "${step.title}": Keep as single subtask (marked as grouped unit)`
+      ).join('\n');
+      
+      stepInstructions = `
+**GROUPED UNITS (MUST RESPECT):**
+The user has marked these plan steps as grouped units that should NOT be split into multiple subtasks:
+${groupedStepInfo}
+
+**GROUPED UNIT RULES:**
+- Grouped units must remain as single subtasks regardless of complexity
+- Do not split grouped units even if they seem large or complex
+- User has explicitly chosen this granularity for these steps
+- Other non-grouped steps can still be split into atomic subtasks as normal
+
+`;
+    }
+
     return `Pay special attention to the README.md file which contains the comprehensive Technical Design Document (starting from section "# Technical Design Document"). This document outlines the complete architecture, requirements, and implementation guidelines for the ChopChop project.**
 
 Break down this execution plan into atomic, actionable subtasks with proper dependency ordering. Each subtask should be completable in under 2 hours and affect only a single component or file.
 
-**EXECUTION PLAN:**
+${stepInstructions}**EXECUTION PLAN:**
 ${plan.content}
 
-**DEPENDENCY ORDERING REQUIREMENTS:**
-- Review the entire codebase and learn it thoroughly.
+${plan.steps && plan.steps.length > 0 ? `
+**STRUCTURED PLAN STEPS:**
+${plan.steps.map((step, index) => 
+  `${index + 1}. ${step.title}${step.isGroupedUnit ? ' [GROUPED UNIT - DO NOT SPLIT]' : ''}
+   ${step.description}`
+).join('\n\n')}
+
+` : ''}**DEPENDENCY ORDERING REQUIREMENTS (CRITICAL):**
+- ORDERING IS THE MOST IMPORTANT ASPECT - AI must generate tasks in precise dependency order
+- Users CANNOT reorder tasks - the AI-generated sequence is final and must be correct
+- Review the entire codebase and learn it thoroughly FIRST
 - Analyze what each task needs from previous tasks to succeed
 - Order tasks so dependencies are always completed first
 - Foundation/setup tasks must come before implementation tasks
 - Testing tasks must come after their implementation tasks
 - Documentation tasks should come after implementation is stable
+- Each task must be precisely positioned in the sequence for optimal execution flow
 
 **REQUIREMENTS FOR EACH SUBTASK:**
 - Title: Clear, specific action (e.g., "Create UserService class with email validation")
@@ -633,7 +681,7 @@ Return ONLY a JSON array of subtasks in dependency order:
   }
 ]
 
-Generate 5-15 subtasks that cover the entire execution plan in proper dependency order.`;
+Generate 5-15 subtasks that cover the entire execution plan in PERFECT dependency order. The ordering is CRITICAL and cannot be changed by users.`;
   }
 
   /**
