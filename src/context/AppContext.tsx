@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
-import { AppState, AppStep, GitHubIssue, ClarificationQuestion, ExecutionPlan, Subtask, CreatedIssue, AppConfig, IssueCreationProgress } from '../types';
+import { AppState, AppStep, GitHubIssue, ClarificationQuestion, ExecutionPlan, Subtask, CreatedIssue, AppConfig, IssueCreationProgress, PlanStep } from '../types';
 import { 
   saveConfig, 
   loadConfig, 

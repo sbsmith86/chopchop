@@ -617,13 +617,16 @@ ${plan.steps.map((step, index) =>
    ${step.description}`
 ).join('\n\n')}
 
-` : ''}**DEPENDENCY ORDERING REQUIREMENTS:**
-- Review the entire codebase and learn it thoroughly.
+` : ''}**DEPENDENCY ORDERING REQUIREMENTS (CRITICAL):**
+- ORDERING IS THE MOST IMPORTANT ASPECT - AI must generate tasks in precise dependency order
+- Users CANNOT reorder tasks - the AI-generated sequence is final and must be correct
+- Review the entire codebase and learn it thoroughly FIRST
 - Analyze what each task needs from previous tasks to succeed
 - Order tasks so dependencies are always completed first
 - Foundation/setup tasks must come before implementation tasks
 - Testing tasks must come after their implementation tasks
 - Documentation tasks should come after implementation is stable
+- Each task must be precisely positioned in the sequence for optimal execution flow
 
 **REQUIREMENTS FOR EACH SUBTASK:**
 - Title: Clear, specific action (e.g., "Create UserService class with email validation")
@@ -672,7 +675,7 @@ Return ONLY a JSON array of subtasks in dependency order:
   }
 ]
 
-Generate 5-15 subtasks that cover the entire execution plan in proper dependency order.`;
+Generate 5-15 subtasks that cover the entire execution plan in PERFECT dependency order. The ordering is CRITICAL and cannot be changed by users.`;
   }
 
   /**

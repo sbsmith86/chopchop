@@ -1,8 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import { PlanStep } from '../types';
 
 interface PlanStepManagerProps {
@@ -10,31 +6,16 @@ interface PlanStepManagerProps {
   onStepsChange: (steps: PlanStep[]) => void;
 }
 
-interface SortablePlanStepProps {
+interface PlanStepProps {
   step: PlanStep;
   onUpdate: (step: PlanStep) => void;
   onSplit: (stepId: string) => void;
   onDelete: (stepId: string) => void;
 }
 
-function SortablePlanStep({ step, onUpdate, onSplit, onDelete }: SortablePlanStepProps) {
+function PlanStepCard({ step, onUpdate, onSplit, onDelete }: PlanStepProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedStep, setEditedStep] = useState(step);
-  
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging
-  } = useSortable({ id: step.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1
-  };
 
   const handleSave = () => {
     onUpdate(editedStep);
@@ -60,8 +41,6 @@ function SortablePlanStep({ step, onUpdate, onSplit, onDelete }: SortablePlanSte
 
   return (
     <div
-      ref={setNodeRef}
-      style={style}
       className={`bg-white border-2 rounded-xl p-4 shadow-sm transition-all duration-200 ${
         step.isGroupedUnit
           ? 'border-l-4 border-l-blue-500 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200'
@@ -70,16 +49,8 @@ function SortablePlanStep({ step, onUpdate, onSplit, onDelete }: SortablePlanSte
     >
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          {/* Drag handle */}
+          {/* Step number and grouped unit indicator */}
           <div className="flex items-center space-x-3 mb-3">
-            <button
-              {...attributes}
-              {...listeners}
-              className="w-6 h-6 bg-gray-100 rounded cursor-grab active:cursor-grabbing flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-200 transition-colors"
-              title="Drag to reorder"
-            >
-              ⋮⋮
-            </button>
             <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold text-sm">
               {step.order}
             </div>
@@ -224,34 +195,10 @@ function SortablePlanStep({ step, onUpdate, onSplit, onDelete }: SortablePlanSte
 export const PlanStepManager: React.FC<PlanStepManagerProps> = ({ steps, onStepsChange }) => {
   const [localSteps, setLocalSteps] = useState<PlanStep[]>(steps);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
   // Sync with parent when steps change
   useEffect(() => {
     setLocalSteps(steps);
   }, [steps]);
-
-  const handleDragEnd = (event: any) => {
-    const { active, over } = event;
-
-    if (active.id !== over.id) {
-      const oldIndex = localSteps.findIndex((step) => step.id === active.id);
-      const newIndex = localSteps.findIndex((step) => step.id === over.id);
-
-      const reorderedSteps = arrayMove(localSteps, oldIndex, newIndex).map((step, index) => ({
-        ...step,
-        order: index + 1
-      }));
-
-      setLocalSteps(reorderedSteps);
-      onStepsChange(reorderedSteps);
-    }
-  };
 
   const handleUpdateStep = (updatedStep: PlanStep) => {
     const updatedSteps = localSteps.map(step =>
@@ -323,7 +270,7 @@ export const PlanStepManager: React.FC<PlanStepManagerProps> = ({ steps, onSteps
             Plan Steps ({localSteps.length})
           </h3>
           <p className="text-sm text-gray-500 mt-1">
-            Drag to reorder • Mark grouped units • Control splitting
+            AI-ordered execution sequence • Mark grouped units • Control splitting
           </p>
         </div>
       </div>
@@ -338,28 +285,24 @@ export const PlanStepManager: React.FC<PlanStepManagerProps> = ({ steps, onSteps
             <ul className="space-y-1 text-sm">
               <li>• Mark related work as "grouped units" to keep them as single subtasks</li>
               <li>• Use "allow split" to override "too big" warnings for grouped units</li>
-              <li>• Drag steps to reorder them logically</li>
+              <li>• Step order is determined by AI based on dependencies and logical flow</li>
               <li>• Split complex steps into smaller, more focused steps</li>
             </ul>
           </div>
         </div>
       </div>
 
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={localSteps.map(step => step.id)} strategy={verticalListSortingStrategy}>
-          <div className="space-y-3">
-            {localSteps.map((step) => (
-              <SortablePlanStep
-                key={step.id}
-                step={step}
-                onUpdate={handleUpdateStep}
-                onSplit={handleSplitStep}
-                onDelete={handleDeleteStep}
-              />
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
+      <div className="space-y-3">
+        {localSteps.map((step) => (
+          <PlanStepCard
+            key={step.id}
+            step={step}
+            onUpdate={handleUpdateStep}
+            onSplit={handleSplitStep}
+            onDelete={handleDeleteStep}
+          />
+        ))}
+      </div>
     </div>
   );
 };
