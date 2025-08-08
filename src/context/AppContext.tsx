@@ -47,6 +47,7 @@ type AppAction =
   | { type: 'SET_CLARIFICATION_QUESTIONS'; payload: ClarificationQuestion[] }
   | { type: 'UPDATE_CLARIFICATION_ANSWER'; payload: { questionId: string; answer: string } }
   | { type: 'SET_EXECUTION_PLAN'; payload: ExecutionPlan }
+  | { type: 'UPDATE_PLAN_STEPS'; payload: PlanStep[] }
   | { type: 'SET_SUBTASKS'; payload: Subtask[] }
   | { type: 'UPDATE_SUBTASK'; payload: Subtask }
   | { type: 'SPLIT_SUBTASK'; payload: { originalId: string; newSubtasks: Subtask[] } }
@@ -98,6 +99,16 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
 
     case 'SET_EXECUTION_PLAN':
       return { ...state, executionPlan: action.payload };
+
+    case 'UPDATE_PLAN_STEPS':
+      return { 
+        ...state, 
+        executionPlan: state.executionPlan ? {
+          ...state.executionPlan,
+          steps: action.payload,
+          updatedAt: new Date()
+        } : null
+      };
 
     case 'SET_SUBTASKS':
       return { ...state, subtasks: action.payload };

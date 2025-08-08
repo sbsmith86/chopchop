@@ -50,6 +50,8 @@ export interface PlanStep {
   description: string;
   order: number;
   subtasks: Subtask[];
+  isGroupedUnit?: boolean; // Mark this step as a grouped unit for AI to keep as one subtask
+  allowSplit?: boolean; // Allow overriding "too big" warnings for this step
 }
 
 export interface Subtask {
