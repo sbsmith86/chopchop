@@ -64,6 +64,7 @@ export interface Subtask {
   tags: string[];
   dependsOn: string[]; // Add dependency tracking
   prerequisiteTaskIds: string[]; // IDs of tasks that must complete first
+  affectedFiles: string[]; // Files/modules that will be modified or created
 }
 
 export interface AppConfig {

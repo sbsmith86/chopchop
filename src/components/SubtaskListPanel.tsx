@@ -163,6 +163,24 @@ function SubtaskCard({
                         </ul>
                       </div>
                     )}
+
+                    {/* Affected Files */}
+                    {subtask.affectedFiles && subtask.affectedFiles.length > 0 && (
+                      <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                        <p className="text-xs font-semibold text-blue-800 mb-2 flex items-center">
+                          <span className="mr-1">📁</span>
+                          Affected Files/Modules
+                        </p>
+                        <ul className="text-xs text-blue-700 space-y-1 pl-4">
+                          {subtask.affectedFiles.map((file, index) => (
+                            <li key={index} className="flex items-start">
+                              <span className="mr-2 text-blue-500">📄</span>
+                              <code className="bg-blue-100 px-1 rounded text-blue-800">{file}</code>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 </div>
               </>
