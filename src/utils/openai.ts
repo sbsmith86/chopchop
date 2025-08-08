@@ -87,7 +87,7 @@ export class OpenAIClient {
           messages: [
             {
               role: 'system',
-              content: 'You are an expert software architect and project manager. Create detailed, actionable execution plans that can be broken down into specific development tasks. Focus on practical implementation steps, not just high-level planning.'
+              content: 'You are an expert software architect and project manager creating execution plans for AI developers (like GitHub Copilot). Create detailed, actionable execution plans that can be broken down into specific development tasks suitable for AI implementation. Focus on practical implementation steps that leverage AI strengths in pattern recognition, code generation, and sustained focus on complex logic.'
             },
             {
               role: 'user',
@@ -149,7 +149,7 @@ export class OpenAIClient {
           messages: [
             {
               role: 'system',
-              content: 'You are an expert software engineer and project manager. Break down execution plans into atomic, actionable subtasks that can each be completed in under 2 hours. Each subtask should affect only a single component or file. Include specific acceptance criteria and guardrails for each task.'
+              content: 'You are an expert software engineer and project manager creating tasks for AI developers (like GitHub Copilot). Break down execution plans into focused, actionable subtasks that can each be completed by AI in 4-8 hours. AI can handle more complex logic and longer focused work sessions than humans. Each subtask should have a clear, single purpose but can be more comprehensive than human-sized tasks. Include specific acceptance criteria and guardrails for each task.'
             },
             {
               role: 'user',
@@ -215,7 +215,7 @@ export class OpenAIClient {
           messages: [
             {
               role: 'system',
-              content: 'You are an expert software engineer. Split large tasks into smaller, atomic tasks that can each be completed in under 2 hours. Each split task should be independently completable and affect only a single component or file.'
+              content: 'You are an expert software engineer creating split tasks for AI developers (GitHub Copilot). Split large tasks into smaller, focused tasks that can each be completed by AI in 3-6 hours. AI can handle complex logic and sustained focus better than humans, so tasks can be more comprehensive while remaining atomic. Each split task should be independently completable and focus on a single logical component or feature area.'
             },
             {
               role: 'user',
@@ -567,7 +567,7 @@ ${answeredQuestions || 'No additional clarifications provided'}
   private buildSubtaskPrompt(plan: ExecutionPlan): string {
     return `Pay special attention to the README.md file which contains the comprehensive Technical Design Document (starting from section "# Technical Design Document"). This document outlines the complete architecture, requirements, and implementation guidelines for the ChopChop project.**
 
-Break down this execution plan into atomic, actionable subtasks with proper dependency ordering. Each subtask should be completable in under 2 hours and affect only a single component or file.
+Break down this execution plan into focused, actionable subtasks designed for AI developers (GitHub Copilot). Each subtask should be completable by AI in 4-8 hours and focus on a single logical component or feature area.
 
 **EXECUTION PLAN:**
 ${plan.content}
@@ -580,20 +580,21 @@ ${plan.content}
 - Testing tasks must come after their implementation tasks
 - Documentation tasks should come after implementation is stable
 
-**REQUIREMENTS FOR EACH SUBTASK:**
+**REQUIREMENTS FOR EACH SUBTASK (AI-OPTIMIZED):**
 - Title: Clear, specific action (e.g., "Create UserService class with email validation")
 - Description: Detailed explanation of what needs to be done
 - Acceptance Criteria: 3-5 specific, measurable outcomes that define completion
 - Guardrails: 2-4 rules to prevent scope creep or breaking existing functionality
-- Estimated Hours: Realistic time estimate (1-8 hours, prefer 1-4)
+- Estimated Hours: Realistic time estimate for AI work (2-12 hours, prefer 4-8)
 - Tags: 2-3 relevant tags for categorization
 - DependsOn: List of prerequisite task titles (what must be done first)
 - PrerequisiteTaskIds: Will be populated after ordering
 
-**ATOMICITY RULES:**
-- Each task should have ONE primary action
-- Avoid tasks with "and", "or", or multiple objectives
-- If a task affects multiple files/components, split it
+**ATOMICITY RULES FOR AI:**
+- Each task should have ONE primary logical focus (but can span multiple related files)
+- AI can handle complex logic patterns and multiple related functions
+- Tasks can involve comprehensive feature implementation within a logical boundary
+- Avoid artificially splitting cohesive functionality that AI can handle efficiently
 - Testing tasks should be separate from implementation tasks
 - Documentation tasks should be separate from coding tasks
 
@@ -621,13 +622,13 @@ Return ONLY a JSON array of subtasks in dependency order:
       "Follow existing code patterns",
       "Write unit tests for new functions"
     ],
-    "estimatedHours": 3,
+    "estimatedHours": 6,
     "tags": ["implementation", "backend"],
     "dependsOn": ["Previous task title if any"]
   }
 ]
 
-Generate 5-15 subtasks that cover the entire execution plan in proper dependency order.`;
+Generate 5-15 subtasks that cover the entire execution plan in proper dependency order, optimized for AI development capabilities.`;
   }
 
   /**
@@ -663,7 +664,7 @@ Generate 5-15 subtasks that cover the entire execution plan in proper dependency
           guardrails: Array.isArray(task.guardrails)
             ? task.guardrails.map(g => String(g).trim()).filter(g => g.length > 0)
             : ['Follow existing code patterns', 'Write appropriate tests'],
-          estimatedHours: Math.min(Math.max(Number(task.estimatedHours) || 2, 1), 8),
+          estimatedHours: Math.min(Math.max(Number(task.estimatedHours) || 4, 2), 12),
           tags: Array.isArray(task.tags)
             ? task.tags.map(t => String(t).trim()).filter(t => t.length > 0)
             : ['general']
@@ -696,7 +697,7 @@ Generate 5-15 subtasks that cover the entire execution plan in proper dependency
             description: currentTask.description || currentTask.title,
             acceptanceCriteria: currentTask.acceptanceCriteria || ['Task completed successfully'],
             guardrails: currentTask.guardrails || ['Follow existing patterns'],
-            estimatedHours: currentTask.estimatedHours || 2,
+            estimatedHours: currentTask.estimatedHours || 4,
             tags: currentTask.tags || ['general']
           });
         }
@@ -708,7 +709,7 @@ Generate 5-15 subtasks that cover the entire execution plan in proper dependency
           description: title,
           acceptanceCriteria: ['Task completed successfully'],
           guardrails: ['Follow existing patterns'],
-          estimatedHours: 2,
+          estimatedHours: 4,
           tags: ['general']
         };
       }
@@ -721,7 +722,7 @@ Generate 5-15 subtasks that cover the entire execution plan in proper dependency
         description: currentTask.description || currentTask.title,
         acceptanceCriteria: currentTask.acceptanceCriteria || ['Task completed successfully'],
         guardrails: currentTask.guardrails || ['Follow existing patterns'],
-        estimatedHours: currentTask.estimatedHours || 2,
+        estimatedHours: currentTask.estimatedHours || 4,
         tags: currentTask.tags || ['general']
       });
     }
@@ -730,30 +731,34 @@ Generate 5-15 subtasks that cover the entire execution plan in proper dependency
   }
 
   /**
-   * Detects if a task is "too big" based on TDD criteria
+   * Detects if a task is "too big" based on AI development criteria
    */
   private detectTooBigTask(task: Omit<Subtask, 'id' | 'order' | 'isTooBig'>): boolean {
     const title = task.title.toLowerCase();
     const description = task.description.toLowerCase();
     const content = `${title} ${description}`;
 
-    // Check for multiple actions/resources
-    const multipleActionWords = [' and ', ' or ', ' then ', ' also ', ' plus '];
-    const hasMultipleActions = multipleActionWords.some(word => content.includes(word));
+    // Check for extremely high time estimate (AI can handle more than humans)
+    const isExtremelyHighEffort = task.estimatedHours > 12;
 
-    // Check for high time estimate
-    const isHighEffort = task.estimatedHours > 4;
+    // Check for overly broad scope indicators (AI can handle more complexity)
+    const overlyBroadScopeWords = ['entire system', 'complete overhaul', 'full rewrite', 'massive refactor', 'whole application'];
+    const hasOverlyBroadScope = overlyBroadScopeWords.some(phrase => content.includes(phrase));
 
-    // Check for broad scope indicators
-    const broadScopeWords = ['entire', 'all', 'complete', 'full', 'comprehensive', 'multiple'];
-    const hasBroadScope = broadScopeWords.some(word => content.includes(word));
+    // Check for excessive multiple actions (AI can handle some complexity)
+    const excessiveActionWords = [' and also ', ' plus also ', ' then also '];
+    const hasExcessiveActions = excessiveActionWords.some(word => content.includes(word));
 
-    // Check for multiple component mentions
-    const componentWords = ['component', 'service', 'controller', 'model', 'view', 'api', 'endpoint'];
-    const componentCount = componentWords.filter(word => content.includes(word)).length;
-    const affectsMultipleComponents = componentCount > 1;
+    // Check for multiple major system mentions (AI can handle related components)
+    const majorSystemWords = ['database migration', 'api redesign', 'frontend rewrite', 'architecture change', 'security overhaul'];
+    const majorSystemCount = majorSystemWords.filter(word => content.includes(word)).length;
+    const affectsMultipleMajorSystems = majorSystemCount > 2;
 
-    return hasMultipleActions || isHighEffort || hasBroadScope || affectsMultipleComponents;
+    // AI-specific: Flag tasks that seem to require human judgment or decision-making
+    const requiresHumanJudgmentWords = ['decide', 'choose architecture', 'design system', 'stakeholder feedback', 'user research'];
+    const requiresHumanJudgment = requiresHumanJudgmentWords.some(phrase => content.includes(phrase));
+
+    return isExtremelyHighEffort || hasOverlyBroadScope || hasExcessiveActions || affectsMultipleMajorSystems || requiresHumanJudgment;
   }
 
   /**
@@ -777,89 +782,103 @@ Generate 5-15 subtasks that cover the entire execution plan in proper dependency
           'Identify areas that need special attention',
           'Reference the Technical Design Document for architectural decisions'
         ],
-        estimatedHours: 1,
+        estimatedHours: 2,
         tags: ['setup', 'review']
       },
       {
-        title: 'Set up development environment',
-        description: 'Configure local development environment with necessary tools and dependencies',
+        title: 'Set up development environment and configure build tools',
+        description: 'Configure local development environment with necessary tools, dependencies, and build configurations. Ensure all tooling is properly set up for efficient development.',
         acceptanceCriteria: [
           'Development environment is configured',
-          'All dependencies are installed',
-          'Project builds successfully'
+          'All dependencies are installed and compatible',
+          'Project builds successfully with no errors',
+          'Testing framework is functional',
+          'Linting and formatting tools are configured'
         ],
         guardrails: [
           'Use version-controlled configuration',
-          'Document setup process',
-          'Test environment setup on clean machine'
+          'Document setup process for future reference',
+          'Test environment setup thoroughly',
+          'Follow existing project conventions'
         ],
-        estimatedHours: 2,
+        estimatedHours: 3,
         tags: ['setup', 'environment']
       },
       {
-        title: 'Create core data models',
-        description: 'Define and implement the primary data structures needed for the feature',
+        title: 'Implement core data models and validation logic',
+        description: 'Define and implement the primary data structures, interfaces, and validation logic needed for the feature. Include comprehensive type definitions and validation rules.',
         acceptanceCriteria: [
-          'Data models are defined and documented',
-          'Models include necessary validation',
-          'Database migrations are created if needed'
+          'Data models are defined with proper TypeScript types',
+          'Models include comprehensive validation logic',
+          'Database schemas/migrations are created if needed',
+          'Model relationships are properly defined',
+          'Unit tests cover all validation scenarios'
         ],
         guardrails: [
-          'Follow existing model patterns',
-          'Add appropriate indexes',
-          'Include data validation rules'
+          'Follow existing model patterns and conventions',
+          'Add appropriate database indexes for performance',
+          'Include comprehensive data validation rules',
+          'Ensure backward compatibility with existing data'
         ],
-        estimatedHours: 3,
+        estimatedHours: 6,
         tags: ['backend', 'data']
       },
       {
-        title: 'Implement business logic',
-        description: 'Build the core functionality according to requirements',
+        title: 'Implement comprehensive business logic and service layer',
+        description: 'Build the core business logic, service classes, and application logic according to requirements. Focus on clean, maintainable code with proper error handling.',
         acceptanceCriteria: [
-          'Core features are implemented',
-          'Business rules are enforced',
-          'Error handling is in place'
+          'Core business features are fully implemented',
+          'Business rules and constraints are properly enforced',
+          'Comprehensive error handling and logging is in place',
+          'Service layer follows SOLID principles',
+          'Integration points are well-defined and tested'
         ],
         guardrails: [
-          'Write unit tests for all business logic',
-          'Follow SOLID principles',
-          'Handle edge cases appropriately'
+          'Write comprehensive unit tests for all business logic',
+          'Follow SOLID principles and clean architecture',
+          'Handle edge cases and error scenarios appropriately',
+          'Maintain clear separation of concerns'
+        ],
+        estimatedHours: 8,
+        tags: ['implementation', 'core', 'business-logic']
+      },
+      {
+        title: 'Create API endpoints and integration layer',
+        description: 'Implement REST API endpoints, request/response handling, and integration with the service layer. Include proper validation, serialization, and documentation.',
+        acceptanceCriteria: [
+          'API endpoints are implemented with proper HTTP methods',
+          'Request and response validation is comprehensive',
+          'API documentation is complete and accurate',
+          'Error responses follow consistent patterns',
+          'Integration tests verify endpoint functionality'
+        ],
+        guardrails: [
+          'Follow existing API conventions and patterns',
+          'Include proper HTTP status codes and error messages',
+          'Implement rate limiting and security measures as needed',
+          'Ensure API versioning compatibility'
         ],
         estimatedHours: 6,
-        isTooBig: true,
-        tags: ['implementation', 'core']
+        tags: ['api', 'backend', 'integration']
       },
       {
-        title: 'Create API endpoints',
-        description: 'Implement REST API endpoints for the new functionality',
+        title: 'Add comprehensive testing suite and quality assurance',
+        description: 'Create unit tests, integration tests, and end-to-end tests for all new functionality. Ensure high code coverage and test quality.',
         acceptanceCriteria: [
-          'API endpoints are implemented',
-          'Request/response validation is in place',
-          'API documentation is updated'
+          'Unit tests cover all functions and edge cases',
+          'Integration tests verify complete workflows',
+          'Test coverage is above 85%',
+          'Performance tests validate system behavior under load',
+          'Tests are maintainable and well-documented'
         ],
         guardrails: [
-          'Follow existing API conventions',
-          'Include proper status codes',
-          'Add rate limiting if needed'
+          'Use existing test patterns and frameworks',
+          'Include both positive and negative test scenarios',
+          'Mock external dependencies appropriately',
+          'Ensure tests are fast and reliable'
         ],
-        estimatedHours: 4,
-        tags: ['api', 'backend']
-      },
-      {
-        title: 'Add comprehensive testing',
-        description: 'Create unit and integration tests for all new functionality',
-        acceptanceCriteria: [
-          'Unit tests cover all functions',
-          'Integration tests verify workflows',
-          'Test coverage is above 80%'
-        ],
-        guardrails: [
-          'Use existing test patterns',
-          'Include both positive and negative test cases',
-          'Mock external dependencies'
-        ],
-        estimatedHours: 4,
-        tags: ['testing', 'quality']
+        estimatedHours: 5,
+        tags: ['testing', 'quality', 'automation']
       }
     ];
 
@@ -867,7 +886,7 @@ Generate 5-15 subtasks that cover the entire execution plan in proper dependency
     return baseSubtasks.map((task, index) => ({
       id: `fallback-${Date.now()}-${index}`,
       order: index,
-      isTooBig: task.isTooBig || false,
+      isTooBig: false, // Updated estimates should not trigger "too big" for AI
       ...task
     }));
   }
@@ -878,7 +897,7 @@ Generate 5-15 subtasks that cover the entire execution plan in proper dependency
   private buildSplitPrompt(subtask: Subtask): string {
     return `**IMPORTANT: Before starting any task, first review the entire codebase and learn it thoroughly. Pay special attention to the README.md file which contains the comprehensive Technical Design Document (starting from section "# Technical Design Document"). This document outlines the complete architecture, requirements, and implementation guidelines for the ChopChop project.**
 
-Split this large task into 2-4 smaller, atomic tasks. Each task should be completable in under 2 hours and affect only a single component or file.
+Split this large task into 2-4 smaller, focused tasks optimized for AI development. Each task should be completable by AI in 3-6 hours and focus on a single logical component or feature area.
 
 **ORIGINAL TASK:**
 Title: ${subtask.title}
@@ -886,13 +905,14 @@ Description: ${subtask.description}
 Estimated Hours: ${subtask.estimatedHours}
 Current Acceptance Criteria: ${subtask.acceptanceCriteria.join(', ')}
 
-**SPLITTING REQUIREMENTS:**
+**SPLITTING REQUIREMENTS FOR AI:**
 - Create 2-4 smaller tasks that together accomplish the original task
-- Each task should be independently completable
-- Each task should affect only one component/file
+- Each task should be independently completable by AI
+- Tasks can span related files within a logical component (AI handles complexity well)
 - Total estimated hours should not exceed original (${subtask.estimatedHours}h)
 - Maintain logical sequence and dependencies
 - Preserve the original guardrails for each split task
+- AI can handle more complex logic patterns than humans
 
 **FORMAT:**
 Return ONLY a JSON array of split tasks:
@@ -902,7 +922,7 @@ Return ONLY a JSON array of split tasks:
     "title": "Specific task title",
     "description": "Detailed description",
     "acceptanceCriteria": ["criteria 1", "criteria 2"],
-    "estimatedHours": 2
+    "estimatedHours": 4
   }
 ]
 
@@ -930,7 +950,7 @@ Split the task now:`;
             ? (taskObj.acceptanceCriteria as unknown[]).map((c: unknown) => String(c).trim())
             : ['Task completed successfully'],
           guardrails: originalTask.guardrails, // Inherit original guardrails
-          estimatedHours: Math.min(Math.max(Number(taskObj.estimatedHours) || 1, 1), 4),
+          estimatedHours: Math.min(Math.max(Number(taskObj.estimatedHours) || 3, 2), 8),
           isTooBig: false, // Split tasks should not be too big
           tags: originalTask.tags, // Inherit original tags
           dependsOn: originalTask.dependsOn, // Inherit dependencies
@@ -953,25 +973,25 @@ Split the task now:`;
 
     return [
       {
-        title: `First review codebase, then ${originalTask.title} - Setup & Foundation`,
-        description: `IMPORTANT: Before starting, first review the entire codebase and README.md Technical Design Document. Then proceed with initial setup and foundation work for: ${originalTask.description}`,
+        title: `First review codebase, then ${originalTask.title} - Foundation & Setup`,
+        description: `IMPORTANT: Before starting, first review the entire codebase and README.md Technical Design Document. Then proceed with foundation and setup work for: ${originalTask.description}`,
         acceptanceCriteria: [
           'Reviewed entire codebase and README.md Technical Design Document',
           ...originalTask.acceptanceCriteria.slice(0, halfCriteria)
         ],
         guardrails: [...originalTask.guardrails, 'Follow patterns established in codebase review and Technical Design Document'],
-        estimatedHours: halfHours,
+        estimatedHours: Math.max(halfHours, 3), // Ensure minimum 3 hours for AI tasks
         isTooBig: false,
         tags: [...originalTask.tags, 'setup'],
         dependsOn: originalTask.dependsOn,
         prerequisiteTaskIds: originalTask.prerequisiteTaskIds
       },
       {
-        title: `${originalTask.title} - Implementation & Testing`,
-        description: `Complete implementation and testing for: ${originalTask.description}. Ensure all work follows the architectural patterns and requirements identified in the README.md Technical Design Document.`,
+        title: `${originalTask.title} - Implementation & Integration`,
+        description: `Complete implementation, testing, and integration for: ${originalTask.description}. Ensure all work follows the architectural patterns and requirements identified in the README.md Technical Design Document.`,
         acceptanceCriteria: originalTask.acceptanceCriteria.slice(halfCriteria),
         guardrails: [...originalTask.guardrails, 'Adhere to architecture guidelines from README.md Technical Design Document'],
-        estimatedHours: originalTask.estimatedHours - halfHours,
+        estimatedHours: Math.max(originalTask.estimatedHours - halfHours, 3), // Ensure minimum 3 hours for AI tasks
         isTooBig: false,
         tags: [...originalTask.tags, 'implementation'],
         dependsOn: originalTask.dependsOn,

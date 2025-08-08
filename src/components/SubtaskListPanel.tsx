@@ -269,17 +269,13 @@ export const SubtaskListPanel: React.FC = () => {
       return;
     }
 
-    if (!state.config.openaiApiKey) {
-      setError('OpenAI API key is required. Please configure it in settings.');
-      return;
-    }
-
     setLoading(true);
     setError(null);
     setHasGenerated(true);
 
     try {
-      const openaiClient = new OpenAIClient(state.config.openaiApiKey);
+      // Create OpenAI client even without API key to enable fallback functionality
+      const openaiClient = new OpenAIClient(state.config.openaiApiKey || '');
       const subtasks = await openaiClient.generateSubtasks(state.executionPlan);
 
       dispatch({ type: 'SET_SUBTASKS', payload: subtasks });
@@ -287,6 +283,8 @@ export const SubtaskListPanel: React.FC = () => {
       const tooBigCount = subtasks.filter(task => task.isTooBig).length;
       if (tooBigCount > 0) {
         setError(`Generated ${subtasks.length} subtasks with dependency-aware ordering. ${tooBigCount} tasks are flagged as potentially too large and may benefit from splitting.`);
+      } else if (!state.config.openaiApiKey) {
+        setError(`Generated ${subtasks.length} fallback subtasks optimized for AI development. Configure OpenAI API key for custom task generation.`);
       } else {
         setError(null);
       }
@@ -294,7 +292,11 @@ export const SubtaskListPanel: React.FC = () => {
     } catch (error) {
       console.error('Failed to generate subtasks:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to generate subtasks';
-      setError(`${errorMessage}. Please check your OpenAI API key and try again.`);
+      if (!state.config.openaiApiKey) {
+        setError(`Using fallback subtasks. ${errorMessage}`);
+      } else {
+        setError(`${errorMessage}. Please check your OpenAI API key and try again.`);
+      }
     } finally {
       setLoading(false);
     }
@@ -302,10 +304,10 @@ export const SubtaskListPanel: React.FC = () => {
 
   // Auto-generate subtasks when entering this step
   useEffect(() => {
-    if (state.executionPlan && state.config && !hasGenerated && state.subtasks.length === 0) {
+    if (state.executionPlan && !hasGenerated && state.subtasks.length === 0) {
       generateSubtasks();
     }
-  }, [state.executionPlan, state.config, hasGenerated, state.subtasks.length, generateSubtasks]);
+  }, [state.executionPlan, hasGenerated, state.subtasks.length, generateSubtasks]);
 
   /**
    * Update a subtask
@@ -422,7 +424,7 @@ export const SubtaskListPanel: React.FC = () => {
                 </p>
                 <button
                   onClick={generateSubtasks}
-                  disabled={!state.executionPlan || !state.config}
+                  disabled={!state.executionPlan}
                   className="inline-flex items-center px-6 py-3 text-base font-semibold text-white bg-gradient-to-r from-orange-500 to-red-600 border border-transparent rounded-xl hover:from-orange-600 hover:to-red-700 focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transition-all"
                 >
                   <span className="mr-2">⚡</span>
